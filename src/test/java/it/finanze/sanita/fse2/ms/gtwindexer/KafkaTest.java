@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
@@ -15,8 +16,9 @@ import it.finanze.sanita.fse2.ms.gtwindexer.utility.EncryptDecryptUtility;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@SpringBootTest
-@ActiveProfiles(Constants.Profile.TEST)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ComponentScan(basePackages = {Constants.ComponentScan.BASE})
+@ActiveProfiles(Constants.Profile.DEV)
 public class KafkaTest {
 	
 	@Autowired
