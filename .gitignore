@@ -1,9 +1,15 @@
-# Insert here the files/folders/extensions you would like to exclude from git tracking 
-
-.DS_Store
 /target/
 .settings/org.eclipse.m2e.core.prefs
 .settings/org.eclipse.jdt.core.prefs
 .settings/org.eclipse.core.resources.prefs
 .project
 .classpath
+*.iml
+.checkstyle
+.apt_generated/
+.apt_generated_test/
+bin/
+/**/WEB-INF/classes
+.factorypath
+.metadata
+tmp/
