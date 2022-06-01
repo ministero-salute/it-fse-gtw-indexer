@@ -18,7 +18,7 @@
 		<!-- Application -->
 		<java.version>1.8</java.version>
 		<spring-cloud.version>2021.0.1</spring-cloud.version>
-
+		<start-class>it.finanze.sanita.fse2.ms.gtwindexer.GtwIndexerMsApplication</start-class>
 		<!-- Build -->
 		<config.infra>${project.basedir}/infrastructure</config.infra>
 		<container.output>target/container</container.output>
