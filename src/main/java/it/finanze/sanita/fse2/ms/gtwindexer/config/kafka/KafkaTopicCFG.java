@@ -32,4 +32,10 @@ public class KafkaTopicCFG {
 	@Value("${kafka.indexer-publisher.topic}")
 	private String indexerPublisherTopic;
 	
+	/**
+	 * Indexer status manager Topic.
+	 */
+	@Value("${kafka.statusmanager.topic}")
+	private String statusManagerTopic;
+	
 }

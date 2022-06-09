@@ -43,6 +43,24 @@
 		</encoder>
 	</appender>
 
+	<!-- Elastic Logstash Encoder -->
+	<if condition='property("log.elastic-search.enable").equals("true")'>
+		<then>
+			<logger name="elastic-logger" level="${log.elastic.level}"
+				additivity="false">
+				<appender name="elastic"
+					class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+					<destination>${log.logstash.url}</destination>
+					<encoder
+						class="net.logstash.logback.encoder.LogstashEncoder">
+						<provider
+							class="net.logstash.logback.composite.loggingevent.ArgumentsJsonProvider" />
+					</encoder>
+				</appender>
+			</logger>
+		</then>
+	</if> 
+
 	<!-- LOG everything at INFO level -->
 	<root level="${APP_LOGGING_ROOT_LEVEL:-INFO}">
 		<!--<appender-ref ref="RollingFile" /> -->
