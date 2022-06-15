@@ -29,6 +29,6 @@ public interface IKafkaSRV extends Serializable {
 	 */
 	void listener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders);
  
-	void sendStatusMessage(String workflowInstanceId,EventTypeEnum eventType,EventStatusEnum eventStatus, String exception);
+	void sendStatusMessage(String transactionId,EventTypeEnum eventType,EventStatusEnum eventStatus, String exception);
 	
 }

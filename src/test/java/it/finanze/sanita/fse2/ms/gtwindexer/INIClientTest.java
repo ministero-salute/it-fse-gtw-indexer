@@ -12,14 +12,13 @@ import org.springframework.test.context.ActiveProfiles;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.ResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ComponentScan(basePackages = {Constants.ComponentScan.BASE})
-@ActiveProfiles(Constants.Profile.TEST)
-@Disabled
+@ActiveProfiles(Constants.Profile.DEV)
 public class INIClientTest {
 	
 	@Autowired
@@ -28,10 +27,10 @@ public class INIClientTest {
 	@Test
 	@DisplayName("Send to INI Client Microservice")
 	@Disabled
-	void send() {
-		String workflowInstanceId = "d870d05ba24f4b9891d22e461d71595b";
-		IniPublicationResponseDTO res = iniClient.sendData(workflowInstanceId);
-		assertNotNull(res.getErrorMessage());
+	void send() {  
+		String transactionID = "test";
+		ResponseDTO res = iniClient.sendData(transactionID);
+		assertNotNull(res.getTraceID());
 		 
     }
 }

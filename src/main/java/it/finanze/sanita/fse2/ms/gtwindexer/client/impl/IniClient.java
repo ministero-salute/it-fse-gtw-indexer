@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.MicroservicesURLCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.ResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.ConnectionRefusedException;
 import lombok.extern.slf4j.Slf4j;
@@ -40,19 +40,21 @@ public class IniClient implements IIniClient {
 	private MicroservicesURLCFG msUrlCFG;
 
 	@Override
-	public IniPublicationResponseDTO sendData(final String workflowInstanceId) {
-		IniPublicationResponseDTO out = null;
+	public ResponseDTO sendData(final String transactionID) {
+		ResponseDTO out = null;
 		log.info("Calling ini client - START");
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
 
-		HttpEntity<?> entity = new HttpEntity<>(workflowInstanceId, headers);
+		HttpEntity<?> entity = new HttpEntity<>(transactionID, headers);
 
-		ResponseEntity<IniPublicationResponseDTO> response = null;
+		ResponseEntity<ResponseDTO> response = null;
 		try {
-			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1.0.0/ini-publish", HttpMethod.POST, entity, IniPublicationResponseDTO.class);
-			out = response.getBody();
+			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1.0.0/ini-publish", HttpMethod.POST, entity, ResponseDTO.class);
+			if (response != null) {
+				out = response.getBody();
 				log.info("{} status returned from Fhir mapping Client", response.getStatusCode());
+			}
 		} catch(ResourceAccessException cex) {
 			log.error("Connect error while call document reference ep :" + cex);
 			throw new ConnectionRefusedException(msUrlCFG.getIniClientHost(),"Connection refused");

@@ -55,6 +55,13 @@ public final class StringUtility {
 		return new Gson().toJson(obj);
 	}
 
+ 
+	/**
+	 * Transformation from Object to Json.
+	 * 
+	 * @param obj	object to transform
+	 * @return		json
+	 */
 	public static String toJSONJackson(final Object obj) {
 		String out = "";
 		try {
@@ -69,6 +76,5 @@ public final class StringUtility {
 		}
 		return out; 
 	}
- 
 
 }

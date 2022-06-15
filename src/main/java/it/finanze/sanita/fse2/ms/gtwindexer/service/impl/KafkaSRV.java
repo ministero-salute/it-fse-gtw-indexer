@@ -18,7 +18,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaPropertiesCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.ResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
@@ -116,20 +116,20 @@ public class KafkaSRV implements IKafkaSRV {
 	public void listener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) {
 
 		Date startDateOperation = new Date();
-		String workflowInstanceId = "";
+		String transactionId = "";
 
 		EventTypeEnum eventStepEnum = null;
 		try {
 			boolean sendStatusManagerMessage = true;
 			String message = cr.value();
 			log.info("Consuming Transaction Event - Message received with key {}", cr.key());
-			workflowInstanceId = EncryptDecryptUtility.decryptObject(kafkaPropCFG.getCrypto(), message, String.class);
+			transactionId = EncryptDecryptUtility.decryptObject(kafkaPropCFG.getCrypto(), message, String.class);
 
-			if(!StringUtility.isNullOrEmpty(workflowInstanceId)) {
-				log.info("WORKFLOW ID FROM DISPATCHER : " + workflowInstanceId);
-				IniPublicationResponseDTO response = iniClient.sendData(workflowInstanceId);
+			if(!StringUtility.isNullOrEmpty(transactionId)) {
+				log.info("TRANSACTION ID FROM DISPATCHER : " + transactionId);
+				ResponseDTO response = iniClient.sendData(transactionId);
 				if(response != null) {
-					String cryptoMessage = EncryptDecryptUtility.encryptObject(kafkaPropCFG.getCrypto(), workflowInstanceId);
+					String cryptoMessage = EncryptDecryptUtility.encryptObject(kafkaPropCFG.getCrypto(), transactionId);
 					sendMessage(kafkaTopicCFG.getIndexerPublisherTopic(), "key", cryptoMessage, true);
 					eventStepEnum = EventTypeEnum.SEND_TO_INI;
 				}
@@ -140,10 +140,10 @@ public class KafkaSRV implements IKafkaSRV {
 			}
 
 			if(Boolean.TRUE.equals(sendStatusManagerMessage)) {
-				sendStatusMessage(workflowInstanceId, eventStepEnum, EventStatusEnum.SUCCESS,null);
+				sendStatusMessage(transactionId, eventStepEnum, EventStatusEnum.SUCCESS,null);
 			}
 
-			elasticLogger.info("Successfully sent data to INI for workflow instance id" + workflowInstanceId, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+			elasticLogger.info("Successfully sent data to INI for transactionId " + transactionId, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 
 		} catch (Exception e) {
 			if(eventStepEnum==null) {
@@ -152,7 +152,7 @@ public class KafkaSRV implements IKafkaSRV {
 
 			elasticLogger.error("Error sending data to INI", OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 
-			sendStatusMessage(workflowInstanceId, eventStepEnum, EventStatusEnum.ERROR,ExceptionUtils.getStackTrace(e));
+			sendStatusMessage(transactionId, eventStepEnum, EventStatusEnum.ERROR,ExceptionUtils.getStackTrace(e));
 			deadLetterHelper(e);
 			throw new BusinessException(e);
 		}
@@ -188,7 +188,7 @@ public class KafkaSRV implements IKafkaSRV {
 	}
 
 	@Override
-	public void sendStatusMessage(final String workflowInstanceId,final EventTypeEnum eventType,
+	public void sendStatusMessage(final String transactionId,final EventTypeEnum eventType,
 			final EventStatusEnum eventStatus, String exception) {
 		try {
 			KafkaStatusManagerDTO statusManagerMessage = KafkaStatusManagerDTO.builder().
@@ -199,7 +199,7 @@ public class KafkaSRV implements IKafkaSRV {
 					build();
 			String json = StringUtility.toJSONJackson(statusManagerMessage);
 			String cryptoMessage = EncryptDecryptUtility.encryptObject(kafkaPropCFG.getCrypto(), json);
-			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), workflowInstanceId, cryptoMessage, true);
+			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), transactionId, cryptoMessage, true);
 		} catch(Exception ex) {
 			log.error("Error while send status message on indexer : " , ex);
 			throw new BusinessException(ex);

@@ -89,7 +89,7 @@
 		<dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>
-            <version>3.1.7</version>
+            <version>3.0.6</version>
         </dependency>
 		
 		<!-- DEVTOOL -->
@@ -113,6 +113,16 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- MONGODB -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-sync</artifactId>
+		</dependency>
+
 		<!-- KAFKA -->
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
@@ -124,7 +134,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		 
 		<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
 		<dependency>
 			<groupId>org.apache.commons</groupId>

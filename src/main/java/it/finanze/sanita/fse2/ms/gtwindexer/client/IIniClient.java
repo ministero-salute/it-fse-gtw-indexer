@@ -1,15 +1,13 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
-import java.io.Serializable;
-
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.ResponseDTO;
 
 /**
  * Interface of Ini client.
  * 
  * @author vincenzoingenito
  */
-public interface IIniClient extends Serializable {
+public interface IIniClient {
 
-    IniPublicationResponseDTO sendData(String workflowInstanceId);
+    ResponseDTO sendData(String transactionId);
 }
