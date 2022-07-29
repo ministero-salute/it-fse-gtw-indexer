@@ -2,7 +2,6 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import java.util.Date;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -14,20 +13,25 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.Gson;
+
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaPropertiesCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.logging.ElasticLoggerHelper;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.EncryptDecryptUtility;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,7 +43,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
-public class KafkaSRV implements IKafkaSRV {
+public class KafkaSRV implements IKafkaSRV{
 
 	/**
 	 * Serial version uid.
@@ -52,33 +56,36 @@ public class KafkaSRV implements IKafkaSRV {
 	 */
 	@Autowired
 	@Qualifier("txkafkatemplate")
-	private KafkaTemplate<String, String> txKafkaTemplate;
+	private transient KafkaTemplate<String, String> txKafkaTemplate;
 
 	/**
 	 * Not transactional producer.
 	 */
 	@Autowired
 	@Qualifier("notxkafkatemplate")
-	private KafkaTemplate<String, String> notxKafkaTemplate;
+	private transient KafkaTemplate<String, String> notxKafkaTemplate;
 
 	@Autowired
-	private KafkaPropertiesCFG kafkaPropCFG;
-	
-	@Autowired
-	private KafkaTopicCFG kafkaTopicCFG;
+	private transient KafkaTopicCFG kafkaTopicCFG;
 
 	@Autowired
 	private IIniClient iniClient;
 
 	@Autowired
-	private ElasticLoggerHelper elasticLogger;
+	private transient ElasticLoggerHelper elasticLogger;
+
+	@Autowired
+	private transient ProfileUtility profileUtility;
+	
+	@Autowired
+	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
 
 	@Override
 	public RecordMetadata sendMessage(String topic, String key, String value, boolean trans) {
 		RecordMetadata out = null;
-		ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value); 
+		ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, key, value);
 		try { 
-			out = kafkaSend(record, trans);
+			out = kafkaSend(producerRecord, trans);
 		} catch (Exception e) {
 			log.error("Send failed.", e); 
 			throw new BusinessException(e);
@@ -86,20 +93,21 @@ public class KafkaSRV implements IKafkaSRV {
 		return out;
 	} 
 
-	private RecordMetadata kafkaSend(ProducerRecord<String, String> record, boolean trans) {
+	@SuppressWarnings("unchecked")
+	private RecordMetadata kafkaSend(ProducerRecord<String, String> producerRecord, boolean trans) {
 		RecordMetadata out = null;
 		Object result = null;
 
 		if (trans) {  
 			result = txKafkaTemplate.executeInTransaction(t -> { 
 				try {
-					return t.send(record).get();
+					return t.send(producerRecord).get();
 				} catch (Exception e) {
 					throw new BusinessException(e);
 				}  
 			});  
 		} else { 
-			notxKafkaTemplate.send(record);
+			notxKafkaTemplate.send(producerRecord);
 		} 
 
 		if(result != null) {
@@ -112,50 +120,21 @@ public class KafkaSRV implements IKafkaSRV {
 	}
 
 	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
-	public void listener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) {
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	public void lowPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
+		this.abstractListener(cr, PriorityTypeEnum.LOW);
+	}
 
-		Date startDateOperation = new Date();
-		String workflowInstanceId = "";
+	@Override
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	public void mediumPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
+		this.abstractListener(cr, PriorityTypeEnum.MEDIUM);
+	}
 
-		EventTypeEnum eventStepEnum = null;
-		try {
-			boolean sendStatusManagerMessage = true;
-			String message = cr.value();
-			log.info("Consuming Transaction Event - Message received with key {}", cr.key());
-			workflowInstanceId = EncryptDecryptUtility.decryptObject(kafkaPropCFG.getCrypto(), message, String.class);
-
-			if(!StringUtility.isNullOrEmpty(workflowInstanceId)) {
-				log.info("WORKFLOW ID FROM DISPATCHER : " + workflowInstanceId);
-				IniPublicationResponseDTO response = iniClient.sendData(workflowInstanceId);
-				if(response != null) {
-					String cryptoMessage = EncryptDecryptUtility.encryptObject(kafkaPropCFG.getCrypto(), workflowInstanceId);
-					sendMessage(kafkaTopicCFG.getIndexerPublisherTopic(), "key", cryptoMessage, true);
-					eventStepEnum = EventTypeEnum.SEND_TO_INI;
-				}
-			} else {
-				log.warn("Error consuming Validation Event with key {}: null received", cr.key());
-				elasticLogger.error("Error consuming Validation Event with key " + cr.key() + " null received", OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
-				sendStatusManagerMessage = false;
-			}
-
-			if(Boolean.TRUE.equals(sendStatusManagerMessage)) {
-				sendStatusMessage(workflowInstanceId, eventStepEnum, EventStatusEnum.SUCCESS,null);
-			}
-
-			elasticLogger.info("Successfully sent data to INI for workflow instance id" + workflowInstanceId, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
-
-		} catch (Exception e) {
-			if(eventStepEnum==null) {
-				eventStepEnum = EventTypeEnum.GENERIC_ERROR;
-			}
-
-			elasticLogger.error("Error sending data to INI", OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
-
-			sendStatusMessage(workflowInstanceId, eventStepEnum, EventStatusEnum.ERROR,ExceptionUtils.getStackTrace(e));
-			deadLetterHelper(e);
-			throw new BusinessException(e);
-		}
+	@Override
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	public void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
+		this.abstractListener(cr, PriorityTypeEnum.HIGH);
 	}
 
 
@@ -184,25 +163,76 @@ public class KafkaSRV implements IKafkaSRV {
 
 		}
 
-		log.error("{}", sb.toString());
+		log.error("{}", sb);
 	}
 
 	@Override
 	public void sendStatusMessage(final String workflowInstanceId,final EventTypeEnum eventType,
-			final EventStatusEnum eventStatus, String exception) {
+			final EventStatusEnum eventStatus, String message) {
 		try {
 			KafkaStatusManagerDTO statusManagerMessage = KafkaStatusManagerDTO.builder().
 					eventType(eventType).
 					eventDate(new Date()).
 					eventStatus(eventStatus).
-					exception(exception).
+					message(message).
 					build();
 			String json = StringUtility.toJSONJackson(statusManagerMessage);
-			String cryptoMessage = EncryptDecryptUtility.encryptObject(kafkaPropCFG.getCrypto(), json);
-			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), workflowInstanceId, cryptoMessage, true);
+			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), workflowInstanceId, json, true);
 		} catch(Exception ex) {
 			log.error("Error while send status message on indexer : " , ex);
 			throw new BusinessException(ex);
 		}
 	}
+
+	private void abstractListener(final ConsumerRecord<String, String> cr, PriorityTypeEnum priorityType) {
+		log.info("Messaggio con priorità: {}", priorityType.getCode());
+		final Date startDateOperation = new Date();
+		IndexerValueDTO valueInfo = new IndexerValueDTO();
+
+		EventTypeEnum eventStepEnum = EventTypeEnum.SEND_TO_INI;
+		try {
+			String key = cr.key();
+			log.info("Consuming Transaction Event - Message received with key {}", cr.key());
+			valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
+
+			IniPublicationResponseDTO response = null;
+			if (StringUtility.isNullOrEmpty(valueInfo.getIdentificativoDocUpdate())) {
+				response = iniClient.sendPublicationData(valueInfo.getWorkflowInstanceId());
+			} else {
+				response = iniClient.sendReplaceData(valueInfo);
+			}
+
+			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
+				elasticLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + response.getEsito(), OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
+				switch (priorityType) {
+					case LOW:
+						destTopic += Constants.Misc.LOW_PRIORITY;
+						break;
+					case MEDIUM:
+						destTopic += Constants.Misc.MEDIUM_PRIORITY;
+						break;
+					case HIGH:
+						destTopic += Constants.Misc.HIGH_PRIORITY;
+						break;
+					default:
+						break;
+				}
+
+				sendMessage(destTopic, key, cr.value(), true);
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
+			}  
+		} catch (Exception e) {
+			String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
+			elasticLogger.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
+			deadLetterHelper(e);
+			if(!kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getName())) {
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);
+			} else {
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, errorMessage);
+			} 
+			throw e;
+		}
+	}
+ 
 }

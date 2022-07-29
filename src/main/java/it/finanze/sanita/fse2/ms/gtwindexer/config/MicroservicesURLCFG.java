@@ -18,4 +18,13 @@ public class MicroservicesURLCFG {
 	@Value("${ms.url.gtw-ini-client-service}")
 	private String iniClientHost;
 
+	@Value("${ms.url.gtw-ini-client-path}")
+	private String iniClientPath;
+
+	@Value("${ms.url.gtw-ini-client.publish.ep}")
+	private String iniClientPublish;
+
+	@Value("${ms.url.gtw-ini-client.replace.ep}")
+	private String iniClientReplace;
+
 }

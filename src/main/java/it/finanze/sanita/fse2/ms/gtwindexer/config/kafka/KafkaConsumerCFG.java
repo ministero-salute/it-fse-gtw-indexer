@@ -28,21 +28,14 @@ import lombok.extern.slf4j.Slf4j;
 public class KafkaConsumerCFG {
 
 	/**
-	 *	Kafka properties.
-	 */
-	@Autowired
-	private KafkaPropertiesCFG kafkaPropCFG;
-
-	/**
 	 *	Kafka consumer properties.
 	 */
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
 
-
 	@Autowired
 	private KafkaTopicCFG kafkaTopicCFG;
-	
+
 	/**
 	 * Configurazione consumer.
 	 * 
@@ -106,12 +99,13 @@ public class KafkaConsumerCFG {
 	 */
 	@Bean
 	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerDeadLetterContainerFactory(final @Qualifier("notxkafkadeadtemplate") KafkaTemplate<Object, Object> deadLetterKafkaTemplate) {
+
 		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
 		
 		// Definizione nome topic deadLetter
 		log.info("TOPIC: " + kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic());
-		DeadLetterPublishingRecoverer dlpr = new DeadLetterPublishingRecoverer(deadLetterKafkaTemplate, (record, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
+		DeadLetterPublishingRecoverer dlpr = new DeadLetterPublishingRecoverer(deadLetterKafkaTemplate, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
 		
 		// Set classificazione errori da gestire per la deadLetter.
 		DefaultErrorHandler sceh = new DefaultErrorHandler(dlpr, new FixedBackOff(FixedBackOff.DEFAULT_INTERVAL, FixedBackOff.UNLIMITED_ATTEMPTS));
@@ -138,6 +132,7 @@ public class KafkaConsumerCFG {
 	/**
 	 * @return	exceptions list
 	 */
+	@SuppressWarnings("unchecked")
 	private List<Class<? extends Exception>> getExceptionsConfig() {
 		List<Class<? extends Exception>> out = new ArrayList<>();
 		String temp = null;
@@ -165,7 +160,6 @@ public class KafkaConsumerCFG {
 	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerContainerFactory(final @Qualifier("notxkafkatemplate") KafkaTemplate<String, String> kafkaTemplate) {
 		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
-		
 		return factory;
 	}
 }

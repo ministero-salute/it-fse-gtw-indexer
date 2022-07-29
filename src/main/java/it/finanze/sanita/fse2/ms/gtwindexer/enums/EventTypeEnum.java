@@ -2,8 +2,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.enums;
 
 public enum EventTypeEnum {
 
-	SEND_TO_INI("Send to ini"), 
-	GENERIC_ERROR("Generic error from indexer");
+	SEND_TO_INI("SEND_TO_INI");
 
 	private String name;
 

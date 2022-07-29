@@ -1,5 +1,8 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.utility;
 
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -58,9 +61,11 @@ public final class StringUtility {
 	public static String toJSONJackson(final Object obj) {
 		String out = "";
 		try {
-			ObjectMapper objectMapper = new ObjectMapper(); 
+			final ObjectMapper objectMapper = new ObjectMapper(); 
 			objectMapper.registerModule(new JavaTimeModule());
 			objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+			objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+			objectMapper.setTimeZone(TimeZone.getDefault());
 			objectMapper.setSerializationInclusion(Include.NON_NULL);
 			out = objectMapper.writeValueAsString(obj);
 		} catch(Exception ex) {

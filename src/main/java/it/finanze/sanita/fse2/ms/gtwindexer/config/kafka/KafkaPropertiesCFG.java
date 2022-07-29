@@ -26,12 +26,7 @@ public class KafkaPropertiesCFG implements Serializable {
 	 */
 	@Value("${kafka.bootstrap-servers}")
 	private String producerBootstrapServers;
-	
-	/**
-	 * Crypto.
-	 */
-	@Value("${kafka.crypto}")
-	private String crypto;
+	 
 	
 	/**
 	 * Security protocol.
