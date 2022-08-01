@@ -218,9 +218,9 @@ public class KafkaSRV implements IKafkaSRV{
 					default:
 						break;
 				}
-
-				sendMessage(destTopic, key, cr.value(), true);
+				
 				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
+				sendMessage(destTopic, key, cr.value(), true);
 			}  
 		} catch (Exception e) {
 			String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();

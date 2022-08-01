@@ -82,12 +82,7 @@ public class IniClient implements IIniClient {
 			log.info("{} status returned from INI client while executing update of document, with body: {}", response.getStatusCode(), response.getBody());
 		} catch (ResourceAccessException | ConnectionRefusedException cex) {
 			log.error("Connection error while calling ini client ep:", cex);
-			if (out != null) {
-				out.setEsito(false);
-				out.setErrorMessage(ExceptionUtils.getRootCauseMessage(cex));
-			} else {
-				throw cex;
-			}
+			throw cex;
 		} catch(Exception ex) {
 			log.error("Generic error while calling ini endpoint to execute update: ", ex);
 			throw new BusinessException("Generic error while calling ini endpoint to execute update: ", ex);
