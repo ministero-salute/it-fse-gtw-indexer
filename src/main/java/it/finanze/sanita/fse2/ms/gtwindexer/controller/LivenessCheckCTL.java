@@ -3,35 +3,40 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.controller;
 
-import java.io.Serializable;
-
-import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
-import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class LivenessCheckController.
- *
- * @author vincenzoingenito
+ 
  */
-@Component
-@Endpoint(id = "live")
-public class LivenessCheckCTL implements Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5960076491278265396L;
+@RestController
+@Tag(name = "Health check Status Actuator")
+public class LivenessCheckCTL implements HealthIndicator {
 
 	/**
 	 * Return system state.
 	 * 
-	 * @return	system state
+	 * @return system state
 	 */
-	 @ReadOperation
-	 public Health health() {
+	@Override
+	@GetMapping("/status")
+	@Operation(summary = "Health check status", description = "Health check endpoint.")
+	@ApiResponse(content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE))
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Health check OK", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE)) })
+	public Health health() {
 		return Health.up().build();
 	}
- 
+
 }
