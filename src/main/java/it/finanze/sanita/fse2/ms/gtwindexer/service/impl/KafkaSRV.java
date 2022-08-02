@@ -219,7 +219,7 @@ public class KafkaSRV implements IKafkaSRV{
 						break;
 				}
 				
-				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, response.getErrorMessage());
 				sendMessage(destTopic, key, cr.value(), true);
 			}  
 		} catch (Exception e) {
