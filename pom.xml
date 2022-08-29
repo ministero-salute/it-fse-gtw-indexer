@@ -181,6 +181,11 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.8</version>
+				<configuration>
+					<excludes>
+						<exclude>src/main/java/it/finanze/sanita/fse2/ms/gtwindexer/client/impl/**/*.*</exclude>
+					</excludes>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>

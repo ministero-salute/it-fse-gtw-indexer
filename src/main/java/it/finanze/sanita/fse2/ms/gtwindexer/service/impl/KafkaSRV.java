@@ -102,7 +102,12 @@ public class KafkaSRV implements IKafkaSRV{
 			result = txKafkaTemplate.executeInTransaction(t -> { 
 				try {
 					return t.send(producerRecord).get();
-				} catch (Exception e) {
+				} catch(InterruptedException e) {
+					log.error("InterruptedException caught. Interrupting thread...");					
+					Thread.currentThread().interrupt(); 
+					throw new BusinessException(e); 
+				}
+				catch (Exception e) {
 					throw new BusinessException(e);
 				}  
 			});  
@@ -203,7 +208,8 @@ public class KafkaSRV implements IKafkaSRV{
 			}
 
 			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
-				elasticLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + response.getEsito(), OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+				final boolean outcome = response != null ? response.getEsito() : false;
+				elasticLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
 				switch (priorityType) {
 					case LOW:
@@ -219,7 +225,8 @@ public class KafkaSRV implements IKafkaSRV{
 						break;
 				}
 				
-				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, response.getErrorMessage());
+				final String errorMessage = response != null ? response.getErrorMessage() : null;
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, errorMessage);
 				sendMessage(destTopic, key, cr.value(), true);
 			}  
 		} catch (Exception e) {

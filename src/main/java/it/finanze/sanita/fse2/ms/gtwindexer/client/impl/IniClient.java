@@ -1,6 +1,5 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.client.impl;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
