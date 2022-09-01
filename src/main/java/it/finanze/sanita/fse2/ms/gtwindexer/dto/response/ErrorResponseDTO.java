@@ -3,6 +3,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.AbstractDTO;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 /**
@@ -13,6 +14,7 @@ import lombok.Data;
  * 	Error response.
  */
 @Data
+@EqualsAndHashCode(callSuper=true)
 public class ErrorResponseDTO extends AbstractDTO {
 
 	/**

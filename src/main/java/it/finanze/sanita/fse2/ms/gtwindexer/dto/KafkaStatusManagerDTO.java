@@ -6,9 +6,11 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @Builder
+@EqualsAndHashCode(callSuper=true)
 public class KafkaStatusManagerDTO extends AbstractDTO {
 
 	/**
