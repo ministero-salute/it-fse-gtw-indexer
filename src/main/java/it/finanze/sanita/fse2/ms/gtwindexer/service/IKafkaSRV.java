@@ -1,12 +1,13 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.service;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
+import java.io.Serializable;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.messaging.MessageHeaders;
 
-import java.io.Serializable;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
  
 
 public interface IKafkaSRV extends Serializable {

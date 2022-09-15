@@ -1,0 +1,12 @@
+15/09/2022
+
+Removed
+log.elastic.level=trace
+log.elastic-search.enable=true
+log.logstash.url=127.0.0.1:5000
+ms.url.gtw-ini-client-path=/v1
+ms.url.gtw-ini-client.publish.ep=/ini-publish
+ms.url.gtw-ini-client.replace.ep=/ini-replace
+
+Add
+kafka.log.base-topic=MDS-SA-0004_FU_001_LOG

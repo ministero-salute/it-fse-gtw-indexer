@@ -3,13 +3,8 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 import java.util.Date;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +13,6 @@ import com.google.gson.Gson;
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
@@ -29,8 +23,8 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.logging.ElasticLoggerHelper;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
@@ -43,86 +37,24 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
-public class KafkaSRV implements IKafkaSRV{
+public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 	/**
 	 * Serial version uid.
 	 */
 	private static final long serialVersionUID = 987723954716001270L;
 
-
-	/**
-	 * Transactional producer.
-	 */
-	@Autowired
-	@Qualifier("txkafkatemplate")
-	private transient KafkaTemplate<String, String> txKafkaTemplate;
-
-	/**
-	 * Not transactional producer.
-	 */
-	@Autowired
-	@Qualifier("notxkafkatemplate")
-	private transient KafkaTemplate<String, String> notxKafkaTemplate;
-
-	@Autowired
-	private transient KafkaTopicCFG kafkaTopicCFG;
-
 	@Autowired
 	private IIniClient iniClient;
 
 	@Autowired
-	private transient ElasticLoggerHelper elasticLogger;
+	private transient KafkaLoggerSRV kafkaLogger;
 
 	@Autowired
 	private transient ProfileUtility profileUtility;
 	
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
-
-	@Override
-	public RecordMetadata sendMessage(String topic, String key, String value, boolean trans) {
-		RecordMetadata out = null;
-		ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, key, value);
-		try { 
-			out = kafkaSend(producerRecord, trans);
-		} catch (Exception e) {
-			log.error("Send failed.", e); 
-			throw new BusinessException(e);
-		}   
-		return out;
-	} 
-
-	@SuppressWarnings("unchecked")
-	private RecordMetadata kafkaSend(ProducerRecord<String, String> producerRecord, boolean trans) {
-		RecordMetadata out = null;
-		Object result = null;
-
-		if (trans) {  
-			result = txKafkaTemplate.executeInTransaction(t -> { 
-				try {
-					return t.send(producerRecord).get();
-				} catch(InterruptedException e) {
-					log.error("InterruptedException caught. Interrupting thread...");					
-					Thread.currentThread().interrupt(); 
-					throw new BusinessException(e); 
-				}
-				catch (Exception e) {
-					throw new BusinessException(e);
-				}  
-			});  
-		} else { 
-			notxKafkaTemplate.send(producerRecord);
-		} 
-
-		if(result != null) {
-			SendResult<String,String> sendResult = (SendResult<String,String>) result;
-			out = sendResult.getRecordMetadata();
-			log.info("Send success.");
-		}
-
-		return out;
-	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
@@ -209,7 +141,7 @@ public class KafkaSRV implements IKafkaSRV{
 
 			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
 				final boolean outcome = response != null ? response.getEsito() : false;
-				elasticLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+				kafkaLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
 				switch (priorityType) {
 					case LOW:
@@ -231,7 +163,7 @@ public class KafkaSRV implements IKafkaSRV{
 			}  
 		} catch (Exception e) {
 			String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
-			elasticLogger.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
+			kafkaLogger.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 			deadLetterHelper(e);
 			if(!kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getName())) {
 				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);
@@ -241,5 +173,5 @@ public class KafkaSRV implements IKafkaSRV{
 			throw e;
 		}
 	}
- 
+
 }

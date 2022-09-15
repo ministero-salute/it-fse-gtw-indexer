@@ -50,7 +50,7 @@ public class IniClient implements IIniClient {
 
 		ResponseEntity<IniPublicationResponseDTO> response = null;
 		try {
-			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + msUrlCFG.getIniClientPath() + msUrlCFG.getIniClientPublish(), HttpMethod.POST, entity, IniPublicationResponseDTO.class);
+			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1/ini-publish", HttpMethod.POST, entity, IniPublicationResponseDTO.class);
 			out = response.getBody();
 			log.info("{} status returned from INI client while executing publish document, with body: {}", response.getStatusCode(), response.getBody());
 		} catch (ResourceAccessException | ConnectionRefusedException cex) {
@@ -76,7 +76,7 @@ public class IniClient implements IIniClient {
 
 		ResponseEntity<IniPublicationResponseDTO> response = null;
 		try {
-			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + msUrlCFG.getIniClientPath() + msUrlCFG.getIniClientReplace(), HttpMethod.PUT, entity, IniPublicationResponseDTO.class);
+			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1/ini-replace", HttpMethod.PUT, entity, IniPublicationResponseDTO.class);
 			out = response.getBody();
 			log.info("{} status returned from INI client while executing update of document, with body: {}", response.getStatusCode(), response.getBody());
 		} catch (ResourceAccessException | ConnectionRefusedException cex) {
