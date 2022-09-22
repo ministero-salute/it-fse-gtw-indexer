@@ -48,29 +48,15 @@ public class KafkaProducerCFG {
 
 		InetAddress id = getLocalHost();
 
-		log.info("kafkaCFG.getClientId() : " + kafkaProducerPropCFG.getClientId() + "-tx" + "-" + id );
 		props.put(ProducerConfig.CLIENT_ID_CONFIG, kafkaProducerPropCFG.getClientId() + "-tx" + "-" + id );
-
-		log.info("kafkaCFG.getRetries() : " + kafkaProducerPropCFG.getRetries());
 		props.put(ProducerConfig.RETRIES_CONFIG, kafkaProducerPropCFG.getRetries());
-
-		log.info("kafkaCFG.getProducerBootstrapServers() : " + kafkaProducerPropCFG.getProducerBootstrapServers());
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProducerPropCFG.getProducerBootstrapServers());
-
-		log.info("kafkaCFG.getKeySerializer() : " + kafkaProducerPropCFG.getKeySerializer());
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, kafkaProducerPropCFG.getKeySerializer());
-
-		log.info("kafkaCFG.getValueSerializer() : " + kafkaProducerPropCFG.getValueSerializer());
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, kafkaProducerPropCFG.getValueSerializer());
-
-		log.info("kafkaCFG.getTransactionalId() : " + id + "-" + kafkaProducerPropCFG.getTransactionalId());
 		props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, id + "-" + kafkaProducerPropCFG.getTransactionalId());
-
-		log.info("kafkaCFG.getAck() : " + kafkaProducerPropCFG.getAck());
 		props.put(ProducerConfig.ACKS_CONFIG,kafkaProducerPropCFG.getAck());
-
-		log.info("kafkaCFG.getIdempotence() : " + kafkaProducerPropCFG.getIdempotence());
 		props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,kafkaProducerPropCFG.getIdempotence());
+
 		//SSL
 		if(kafkaPropCFG.isEnableSSL()) {
 			props.put("security.protocol", kafkaPropCFG.getProtocol());
@@ -103,7 +89,7 @@ public class KafkaProducerCFG {
 	@Bean
 	@Qualifier("txkafkatemplateFactory") 
 	public ProducerFactory<String, String> producerFactory() {
-		log.info("Inizializzo la factory transazionale");
+		log.info("Initialization of transaction Factory");
 		return new DefaultKafkaProducerFactory<>(producerConfigs());
 	}
 
@@ -122,20 +108,13 @@ public class KafkaProducerCFG {
 	@Bean 
 	public Map<String, Object> producerWithoutTransactionConfigs() {
 		Map<String, Object> props = new HashMap<>();
-		log.info("kafkaCFG.getClientId() -noTx :" + kafkaProducerPropCFG.getClientId()+ "-noTx");
+		
 		props.put(ProducerConfig.CLIENT_ID_CONFIG, kafkaProducerPropCFG.getClientId()+ "-noTx");
-
-		log.info("kafkaCFG.getRetries(): " + kafkaProducerPropCFG.getRetries());
 		props.put(ProducerConfig.RETRIES_CONFIG, kafkaProducerPropCFG.getRetries());
-
-		log.info("kafkaCFG.getProducerBootstrapServers(): " + kafkaProducerPropCFG.getProducerBootstrapServers());
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProducerPropCFG.getProducerBootstrapServers());
-
-		log.info("kafkaCFG.getKeySerializer(): " + kafkaProducerPropCFG.getKeySerializer());
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, kafkaProducerPropCFG.getKeySerializer());
-
-		log.info("kafkaCFG.getValueSerializer(): " + kafkaProducerPropCFG.getValueSerializer());
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, kafkaProducerPropCFG.getValueSerializer());
+
 		//SSL
 		if(kafkaPropCFG.isEnableSSL()) {
 			props.put("security.protocol", kafkaPropCFG.getProtocol());
@@ -154,7 +133,7 @@ public class KafkaProducerCFG {
 	@Bean
 	@Qualifier("notxkafkatemplateFactory") 
 	public ProducerFactory<String, String> producerFactoryWithoutTransaction() {
-		log.info("Inizializzo la factory non transazionale");
+		log.info("Initialization of non transaction Factory");
 		return new DefaultKafkaProducerFactory<>(producerWithoutTransactionConfigs());
 	}
 

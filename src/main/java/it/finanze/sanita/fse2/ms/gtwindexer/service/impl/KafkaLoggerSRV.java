@@ -80,7 +80,7 @@ public class KafkaLoggerSRV {
 		final String jsonObject = StringUtility.toJSON(logDTO);
 		log.info(jsonObject);
 		logSRV.sendLoggerStatus(jsonObject);
-	} 
+	}
 
 	public void warn(String message, ILogEnum operation,  
 			ResultLogEnum result, Date startDateOperation) {

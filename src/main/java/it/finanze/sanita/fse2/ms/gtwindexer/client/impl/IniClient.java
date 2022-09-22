@@ -42,7 +42,7 @@ public class IniClient implements IIniClient {
 	@Override
 	public IniPublicationResponseDTO sendPublicationData(final String workflowInstanceId) {
 		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
-		log.info("Calling ini client - START");
+		log.info("INI Client - Sending publication data to INI");
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
 
@@ -52,7 +52,7 @@ public class IniClient implements IIniClient {
 		try {
 			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1/ini-publish", HttpMethod.POST, entity, IniPublicationResponseDTO.class);
 			out = response.getBody();
-			log.info("{} status returned from INI client while executing publish document, with body: {}", response.getStatusCode(), response.getBody());
+			log.debug("{} status returned from INI client while executing publish document, with body: {}", response.getStatusCode(), response.getBody());
 		} catch (ResourceAccessException | ConnectionRefusedException cex) {
 			log.error("Connect error while call ini client ep :" + cex);
 			throw cex;
@@ -67,7 +67,7 @@ public class IniClient implements IIniClient {
 	public IniPublicationResponseDTO sendReplaceData(IndexerValueDTO updateInfo) {
 
 		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
-		log.info("Calling ini client for update document with identifier: {}", updateInfo.getIdentificativoDocUpdate());
+		log.info("INI Client - Sending update data to INI to update document with identifier: {}", updateInfo.getIdentificativoDocUpdate());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
@@ -78,7 +78,7 @@ public class IniClient implements IIniClient {
 		try {
 			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1/ini-replace", HttpMethod.PUT, entity, IniPublicationResponseDTO.class);
 			out = response.getBody();
-			log.info("{} status returned from INI client while executing update of document, with body: {}", response.getStatusCode(), response.getBody());
+			log.debug("{} status returned from INI client while executing update of document, with body: {}", response.getStatusCode(), response.getBody());
 		} catch (ResourceAccessException | ConnectionRefusedException cex) {
 			log.error("Connection error while calling ini client ep:", cex);
 			throw cex;
