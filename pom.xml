@@ -26,7 +26,6 @@
 		<!-- Sonar integration -->
 		<sonar.organization>ministero-salute</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
-		<sonar.exclusions>src/main/java/it/finanze/sanita/fse2/ms/gtwindexer/logging/**/*.*</sonar.exclusions>
 	</properties>
 
 	<dependencies>
@@ -124,14 +123,6 @@
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
-		</dependency>
-
-		<!-- CRYPT -->
-		<!-- https://mvnrepository.com/artifact/org.jasypt/jasypt -->
-		<dependency>
-			<groupId>org.jasypt</groupId>
-			<artifactId>jasypt</artifactId>
-			<version>1.9.3</version>
 		</dependency>
 
 		<!-- TRACING -->
