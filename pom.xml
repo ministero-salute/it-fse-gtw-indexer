@@ -26,6 +26,7 @@
 		<!-- Sonar integration -->
 		<sonar.organization>ministero-salute</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.exclusions>src/main/java/it/finanze/sanita/fse2/ms/gtwindexer/logging/**/*.*</sonar.exclusions>
 	</properties>
 
 	<dependencies>
@@ -94,13 +95,6 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
-		</dependency>
-
-		<!-- MAPPER -->
-		<dependency>
-			<groupId>org.modelmapper.extensions</groupId>
-			<artifactId>modelmapper-spring</artifactId>
-			<version>3.1.0</version>
 		</dependency>
 
 		<!-- TEST -->

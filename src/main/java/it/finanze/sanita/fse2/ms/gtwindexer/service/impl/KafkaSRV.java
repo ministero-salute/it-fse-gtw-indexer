@@ -2,6 +2,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import java.util.Date;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,12 +17,6 @@ import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerProperties
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
@@ -46,9 +41,6 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 	@Autowired
 	private IIniClient iniClient;
-
-	@Autowired
-	private transient KafkaLoggerSRV kafkaLogger;
 
 	@Autowired
 	private transient ProfileUtility profileUtility;
@@ -133,7 +125,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 			valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
 			IniPublicationResponseDTO response = null;
-			if (StringUtility.isNullOrEmpty(valueInfo.getIdentificativoDocUpdate())) {
+			if (valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.PUBLISH)) {
 				response = iniClient.sendPublicationData(valueInfo.getWorkflowInstanceId());
 			} else {
 				response = iniClient.sendReplaceData(valueInfo);
@@ -141,7 +133,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
 				final boolean outcome = response != null ? response.getEsito() : false;
-				kafkaLogger.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+				log.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
 				switch (priorityType) {
 					case LOW:
@@ -163,7 +155,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 			}  
 		} catch (Exception e) {
 			String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
-			kafkaLogger.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
+			log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 			deadLetterHelper(e);
 			if(!kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getName())) {
 				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);

@@ -22,5 +22,7 @@ public class LogDTO {
 	private String op_error;
 	
 	private String op_error_description;
+
+	private String op_issuer;
 	
 }

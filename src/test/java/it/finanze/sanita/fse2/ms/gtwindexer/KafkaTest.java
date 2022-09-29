@@ -1,28 +1,20 @@
 package it.finanze.sanita.fse2.ms.gtwindexer;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
+import com.google.gson.Gson;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.ConnectionRefusedException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Description;
@@ -34,19 +26,16 @@ import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-
-import com.google.gson.Gson;
-
-import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ComponentScan(basePackages = {Constants.ComponentScan.BASE})
@@ -80,7 +69,7 @@ class KafkaTest extends AbstractTest {
 		records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
 		records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
 		
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, null));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
 		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
 		this.kafkaInit(topicMedium, TestConstants.testWorkflowInstanceId, kafkaValue);
@@ -116,7 +105,7 @@ class KafkaTest extends AbstractTest {
 		records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
 		records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, null));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
 		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
 		this.kafkaInit(topicMedium, TestConstants.testWorkflowInstanceId, kafkaValue);
@@ -172,7 +161,7 @@ class KafkaTest extends AbstractTest {
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> records = new LinkedHashMap<>();
 		records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, TestConstants.testIdentificativoDocUpdate));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
 
 		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
 		IniPublicationResponseDTO responseDTO = new IniPublicationResponseDTO();
@@ -196,7 +185,7 @@ class KafkaTest extends AbstractTest {
 
 		records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, TestConstants.testIdentificativoDocUpdate));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
 
 		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
 

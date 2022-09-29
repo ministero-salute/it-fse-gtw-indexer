@@ -10,3 +10,8 @@ ms.url.gtw-ini-client.replace.ep=/ini-replace
 
 Add
 kafka.log.base-topic=MDS-SA-0004_FU_001_LOG
+
+28/09/2022
+Added:
+log.level=trace
+log.kafka-log.enable=true
