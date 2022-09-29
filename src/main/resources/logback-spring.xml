@@ -1,17 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-	<!-- <property name="LOGS" value="${APP_LOGGING_ROOT:-application-log}/logs"
+	<!-- <property name="LOGS" value="${APP_LOGGING_ROOT:-application-log}/logs" 
 		/> <property name="FILE_NAME" value="springboot-liberty-project" /> -->
-	<springProfile name="default">
-		<property resource="application.properties" />
-	</springProfile>
-	<springProfile name="dev">
-		<property resource="application-dev.properties" />
-	</springProfile>
-	<springProfile name="test">
-		<property resource="application-test.properties" />
-	</springProfile>
+	<property resource="application.properties" />
 
 	<springProperty scope="context" name="springAppName"
 		source="spring.application.name" />
@@ -20,7 +12,8 @@
 	<property name="CONSOLE_LOG_PATTERN"
 		value=" %d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${springAppName},trace: %X{X-B3-TraceId:-} span: %X{X-B3-SpanId:-}, parent: %X{X-B3-ParentSpanId:-} exportable: %X{X-Span-Export:-},] %m%n%throwable" />
 
-	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="console"
+		class="ch.qos.logback.core.ConsoleAppender">
 		<layout class="ch.qos.logback.classic.PatternLayout">
 			<Pattern>
 				${CONSOLE_LOG_PATTERN}
@@ -28,10 +21,13 @@
 		</layout>
 	</appender>
 
-	<appender name="json" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+	<appender name="json"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<encoder
+			class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
 			<layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
-				<jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
+				<jsonFormatter
+					class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
 					<!-- prettyPrint is probably ok in dev, but usually not ideal in production: -->
 					<prettyPrint>false</prettyPrint>
 				</jsonFormatter>
@@ -43,26 +39,6 @@
 		</encoder>
 	</appender>
 
-	<logger name="kafka-logger" level="${log.level}"
-		additivity="false">
-		<appender name="kafka-appender" class="it.finanze.sanita.fse2.ms.gtwindexer.logging.KafkaAppender">
-			<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-				<pattern>%msg%n</pattern>
-			</encoder>
-
-			<topic>${kafka.log.base-topic}</topic>
-			<keyingStrategy class="it.finanze.sanita.fse2.ms.gtwindexer.logging.HostNameKeyingStrategy" />
-			<deliveryStrategy class="it.finanze.sanita.fse2.ms.gtwindexer.logging.BlockingDeliveryStrategy">
-				<timeout>0</timeout>
-			</deliveryStrategy>
-
-			<producerConfig>bootstrap.servers=${kafka.bootstrap-servers}</producerConfig>
-
-			<producerConfig>metadata.fetch.timeout.ms=99999999999</producerConfig>
-			<producerConfig>metadata.fetch.timeout.ms=0</producerConfig>
-			<producerConfig>client.id=${kafka.producer.client-id}</producerConfig>
-		</appender>
-	</logger>
 
 	<!-- LOG everything at INFO level -->
 	<root level="${APP_LOGGING_ROOT_LEVEL:-INFO}">
