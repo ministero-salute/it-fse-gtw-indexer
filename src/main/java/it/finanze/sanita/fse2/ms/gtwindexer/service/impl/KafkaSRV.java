@@ -127,8 +127,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 			IniPublicationResponseDTO response = null;
 			if (valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.PUBLISH)) {
 				response = iniClient.sendPublicationData(valueInfo.getWorkflowInstanceId());
-			} else {
+			} else if (valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.REPLACE)) {
 				response = iniClient.sendReplaceData(valueInfo);
+			} else {
+				throw new BusinessException("Unsupported INI operation");
 			}
 
 			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
