@@ -135,7 +135,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevProfile()) {
 				final boolean outcome = response != null ? response.getEsito() : false;
-				log.info("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
+				log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
 				switch (priorityType) {
 					case LOW:

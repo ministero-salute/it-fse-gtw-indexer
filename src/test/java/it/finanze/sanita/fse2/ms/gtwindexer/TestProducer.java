@@ -17,6 +17,7 @@ public class TestProducer {
         this.producer = producer;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Future<RecordMetadata> send(String topic, String key, String value) {
         ProducerRecord record = new ProducerRecord(topic, key, value);
         return producer.send(record);

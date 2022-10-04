@@ -42,7 +42,7 @@ public class IniClient implements IIniClient {
 	@Override
 	public IniPublicationResponseDTO sendPublicationData(final String workflowInstanceId) {
 		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
-		log.info("INI Client - Sending publication data to INI");
+		log.debug("INI Client - Sending publication data to INI");
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
 
@@ -67,7 +67,7 @@ public class IniClient implements IIniClient {
 	public IniPublicationResponseDTO sendReplaceData(IndexerValueDTO updateInfo) {
 
 		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
-		log.info("INI Client - Sending update data to INI to update document with identifier: {}", updateInfo.getIdDoc());
+		log.debug("INI Client - Sending update data to INI to update document with identifier: {}", updateInfo.getIdDoc());
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
