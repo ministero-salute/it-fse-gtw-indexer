@@ -59,6 +59,12 @@ public final class Constants {
 		 * Dev profile.
 		 */
 		public static final String DEV = "dev";
+		
+
+		/**
+		 * Docker profile.
+		 */
+		public static final String DOCKER = "docker";
 
 		/** 
 		 * Constructor.
