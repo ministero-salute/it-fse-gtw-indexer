@@ -136,7 +136,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 				throw new BusinessException("Unsupported INI operation");
 			}
 
-			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || profileUtility.isTestProfile() || profileUtility.isDevOrDockerProfile()) {
+			if ((response != null && Boolean.TRUE.equals(response.getEsito())) || isHandledPerMock(response)) {
 				final boolean outcome = response != null ? response.getEsito() : false;
 				log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response:" + outcome, OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 				String destTopic = kafkaTopicCFG.getIndexerPublisherTopic();
@@ -169,6 +169,18 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 			} 
 			throw e;
 		}
+	}
+
+	/**
+	 * Returns {@code true} if the response is handled as a success for mock purposes.
+	 * 
+	 * @param response The response returnd from Ini Client
+	 * @return {@code true} if the response is handled as a success for mock purposes, {@code false} otherwise
+	 */
+	private boolean isHandledPerMock(IniPublicationResponseDTO response) {
+
+		boolean isIpConfigurationError = response != null && !StringUtility.isNullOrEmpty(response.getErrorMessage()) && response.getErrorMessage().contains("Invalid region ip");
+		return (profileUtility.isTestProfile() || profileUtility.isDevOrDockerProfile()) && isIpConfigurationError;
 	}
 
 }
