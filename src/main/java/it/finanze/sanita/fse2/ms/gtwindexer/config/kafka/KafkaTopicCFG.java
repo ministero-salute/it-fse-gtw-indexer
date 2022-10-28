@@ -56,12 +56,6 @@ public class KafkaTopicCFG {
 	private String indexerPublisherTopic;
 	
 	/**
-	 * Log publisher.
-	 */
-	@Value("${kafka.log.base-topic}")
-	private String logPublisherTopic;
-	
-	/**
 	 * Indexer status manager Topic.
 	 */
 	@Value("${kafka.statusmanager.topic}")

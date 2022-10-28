@@ -15,3 +15,9 @@ kafka.log.base-topic=MDS-SA-0004_FU_001_LOG
 Added:
 log.level=trace
 log.kafka-log.enable=true
+
+28/10/2022
+Removed:
+log.level
+log.kafka-log.enable
+kafka.log.base-topic

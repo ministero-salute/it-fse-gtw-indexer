@@ -81,13 +81,6 @@
 			<artifactId>logback-jackson</artifactId>
 			<version>0.1.5</version>
 		</dependency>
-
-		<!-- LOGSTASH LOGBACK ENCODER -->
-		<dependency>
-			<groupId>net.logstash.logback</groupId>
-			<artifactId>logstash-logback-encoder</artifactId>
-			<version>7.2</version>
-		</dependency>
  
 		<!-- DEVTOOL -->
 		<dependency>
