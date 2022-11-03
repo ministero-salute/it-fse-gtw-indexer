@@ -141,7 +141,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 				if (Boolean.TRUE.equals(response.getEsito()) || isHandledPerMock(response)) {
 					log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
-					esito = response.getEsito();
+					esito = response.getEsito() || isHandledPerMock(response);
 					String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + priorityType.getQueue();
 					sendMessage(destTopic, key, cr.value(), true);
 				} else {
@@ -154,15 +154,16 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 				deadLetterHelper(e);
 				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getName())) {
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, errorMessage);
+					throw e;
 				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(e.getClass().getName())){
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);
+					throw e;
 				} else {
 					counter++;
 					if(counter==kafkaConsumerPropCFG.getNRetry()) {
 						sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, "Massimo numero di retry raggiunto :" + errorMessage);
 					}
 				}
-				throw e;
 			}
 		}
 	}
