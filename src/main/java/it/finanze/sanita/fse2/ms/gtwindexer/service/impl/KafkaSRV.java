@@ -131,23 +131,31 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 		boolean esito = false;
 		int counter = 0;
 
+		boolean callIni = true;
+		boolean sendMessageToPublisher = true;
 		while(Boolean.FALSE.equals(esito) && counter<=kafkaConsumerPropCFG.getNRetry()) {
 			try {
 				String key = cr.key();
 				log.debug("Consuming Transaction Event - Message received with key {}", cr.key());
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
-				IniPublicationResponseDTO response = sendToIniClient(valueInfo, esito);
+				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
 				if (Boolean.TRUE.equals(response.getEsito()) || isHandledPerMock(response)) {
 					log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
-					esito = response.getEsito() || isHandledPerMock(response);
-					String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + priorityType.getQueue();
-					sendMessage(destTopic, key, cr.value(), true);
+					callIni = false;
+					
+					if(Boolean.TRUE.equals(sendMessageToPublisher)) {
+						String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + priorityType.getQueue();
+						sendMessage(destTopic, key, cr.value(), true);
+						sendMessageToPublisher = false;
+					}
 				} else {
 					throw new BlockingIniException(response.getErrorMessage());
 				} 
+			 
 				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
+				esito = true;
 			} catch (Exception e) {
 				String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
 				log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
@@ -169,8 +177,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 	}
 
 	private IniPublicationResponseDTO sendToIniClient(final IndexerValueDTO valueInfo,final boolean callIni) {
-		IniPublicationResponseDTO response = null; 
-		if(Boolean.FALSE.equals(callIni)) {
+		IniPublicationResponseDTO response = new IniPublicationResponseDTO();
+		response.setEsito(true);
+		if(Boolean.TRUE.equals(callIni)) {
 			if (valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.PUBLISH)) {
 				response = iniClient.sendPublicationData(valueInfo.getWorkflowInstanceId());
 			} else if (valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.REPLACE)) {
