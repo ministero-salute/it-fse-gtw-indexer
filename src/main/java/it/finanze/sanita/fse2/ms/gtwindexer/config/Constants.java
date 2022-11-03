@@ -77,23 +77,7 @@ public final class Constants {
 		}
 
 	}
-
-	public static final class Misc {
-		/**
-		 * Prefix for priority queues
-		 */
-		public static final String LOW_PRIORITY = "_LOW";
-		public static final String MEDIUM_PRIORITY = "_MEDIUM";
-		public static final String HIGH_PRIORITY = "_HIGH";
-		/**
-		 * Constructor.
-		 */
-		private Misc() {
-			//This method is intentionally left blank.
-		}
-
-	}
-  
+ 
 	/**
 	 *	Constants.
 	 */

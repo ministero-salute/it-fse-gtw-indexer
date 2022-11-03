@@ -114,5 +114,17 @@ public class KafkaConsumerPropertiesCFG implements Serializable {
 	 */
 	@Value("${kafka.enablessl}")
 	private boolean enableSsl;
+	
+	/**
+	 * Kafka retry.
+	 */
+	@Value("${kafka.retry}")
+	private Integer nRetry;
+	
+	/**
+	 * Eccezioni temporanee.
+	 */
+	@Value("#{${kafka.consumer.temporary-exc}}")
+	private List<String> temporaryExceptions;
 
 }
