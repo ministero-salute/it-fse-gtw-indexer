@@ -60,21 +60,21 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void lowPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		abstractListener(cr, PriorityTypeEnum.LOW);
+		genericListener(cr, PriorityTypeEnum.LOW);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void mediumPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		abstractListener(cr, PriorityTypeEnum.MEDIUM);
+		genericListener(cr, PriorityTypeEnum.MEDIUM);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		abstractListener(cr, PriorityTypeEnum.HIGH);
+		genericListener(cr, PriorityTypeEnum.HIGH);
 	}
-
+	
 
 	/**
 	 * @param e
@@ -121,7 +121,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 		}
 	}
 	 
-	private void abstractListener(final ConsumerRecord<String, String> cr, PriorityTypeEnum priorityType) {
+	private void genericListener(final ConsumerRecord<String, String> cr, PriorityTypeEnum priorityType) {
 		log.debug("Message priority: {}", priorityType.getDescription());
 		final Date startDateOperation = new Date();
 		IndexerValueDTO valueInfo = new IndexerValueDTO();
@@ -147,7 +147,6 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 				} else {
 					throw new BlockingIniException(response.getErrorMessage());
 				} 
-				//				final String errorMessage = response != null ? response.getErrorMessage() : null;
 				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
 			} catch (Exception e) {
 				String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
