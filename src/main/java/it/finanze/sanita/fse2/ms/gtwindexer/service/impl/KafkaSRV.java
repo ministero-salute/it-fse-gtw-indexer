@@ -75,7 +75,12 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 	public void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
 		genericListener(cr, PriorityTypeEnum.HIGH);
 	}
-	
+
+	@Override
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.retry}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
+		log.info("retryDeleteListener() - {} {}", cr, messageHeaders);
+	}
 
 	/**
 	 * @param e
@@ -121,7 +126,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 			throw new BusinessException(ex);
 		}
 	}
-	 
+
 	private void genericListener(final ConsumerRecord<String, String> cr, PriorityTypeEnum priorityType) {
 		log.debug("Message priority: {}", priorityType.getDescription());
 		final Date startDateOperation = new Date();

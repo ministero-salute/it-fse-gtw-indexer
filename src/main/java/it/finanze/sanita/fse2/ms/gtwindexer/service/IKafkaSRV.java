@@ -50,5 +50,7 @@ public interface IKafkaSRV extends Serializable {
 	void highPriorityListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws InterruptedException;
 
 	void sendStatusMessage(String workflowInstanceId, EventTypeEnum eventType, EventStatusEnum eventStatus, String exception);
-	
+
+	void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders);
+
 }

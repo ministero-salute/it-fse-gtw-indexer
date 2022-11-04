@@ -48,13 +48,19 @@ public class KafkaTopicCFG {
 	 */
 	@Value("${kafka.dispatcher-indexer.deadletter.topic}")
 	private String dispatcherIndexerDeadLetterTopic;
-	
+
+	/**
+	 * Dispatcher indexer retry topic
+	 */
+	@Value("kafka.dispatcher-indexer.topic.retry")
+	private String dispatcherIndexerRetryTopic;
+
 	/**
 	 * Indexer publisher low priority Topic.
 	 */
 	@Value("${kafka.indexer-publisher.topic}")
 	private String indexerPublisherTopic;
-	
+
 	/**
 	 * Indexer status manager Topic.
 	 */
@@ -68,6 +74,7 @@ public class KafkaTopicCFG {
 			this.dispatcherIndexerMediumPriorityTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerMediumPriorityTopic;
 			this.dispatcherIndexerHighPriorityTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerHighPriorityTopic;
 			this.dispatcherIndexerDeadLetterTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerDeadLetterTopic;
+			this.dispatcherIndexerRetryTopic =  Constants.Profile.TEST_PREFIX + this.dispatcherIndexerRetryTopic;
 			this.indexerPublisherTopic = Constants.Profile.TEST_PREFIX + this.indexerPublisherTopic;
 			this.statusManagerTopic = Constants.Profile.TEST_PREFIX + this.statusManagerTopic;
 		}
