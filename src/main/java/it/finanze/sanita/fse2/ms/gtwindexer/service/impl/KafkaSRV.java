@@ -5,6 +5,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import java.util.Date;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -145,7 +146,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 					log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 					callIni = false;
 					
-					if(Boolean.TRUE.equals(sendMessageToPublisher)) {
+					if(sendMessageToPublisher) {
 						String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + priorityType.getQueue();
 						sendMessage(destTopic, key, cr.value(), true);
 						sendMessageToPublisher = false;
@@ -160,10 +161,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 				String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
 				log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 				deadLetterHelper(e);
-				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getName())) {
+				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())) {
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, errorMessage);
 					throw e;
-				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(e.getClass().getName())){
+				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())){
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);
 					throw e;
 				} else {

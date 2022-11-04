@@ -56,7 +56,7 @@ public class IniClient implements IIniClient {
 			response = restTemplate.exchange(msUrlCFG.getIniClientHost() + "/v1/ini-publish", HttpMethod.POST, entity, IniPublicationResponseDTO.class);
 			out = response.getBody();
 			log.debug("{} status returned from INI client while executing publish document, with body: {}", response.getStatusCode(), response.getBody());
-		} catch (ResourceAccessException | ConnectionRefusedException cex) {
+		} catch (ResourceAccessException cex) {
 			log.error("Connect error while call ini client ep :" + cex);
 			throw cex;
 		} catch(Exception ex) {
