@@ -3,12 +3,15 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.client.impl;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
@@ -90,6 +93,25 @@ public class IniClient implements IIniClient {
 			throw new BusinessException("Generic error while calling ini endpoint to execute update: ", ex);
 		}
 		return out;
+	}
+
+	@Override
+	public IniTraceResponseDTO delete(IniDeleteRequestDTO iniReq) {
+		IniTraceResponseDTO output;
+		try {
+			log.debug("INI Client - Calling Ini to execute delete operation");
+			// Build headers.
+			HttpEntity<Object> entity = new HttpEntity<>(iniReq, null);
+			// Build endpoint e call.
+			String endpoint = msUrlCFG.getIniClientHost() + "/v1/ini-delete";
+			ResponseEntity<IniTraceResponseDTO> restExchange = restTemplate.exchange(endpoint, HttpMethod.DELETE, entity, IniTraceResponseDTO.class);
+			// Gestione response
+			output = restExchange.getBody();
+		} catch (Exception e) {
+			log.error("Errore durante l'invocazione di INI dell'API delete(). ", e);
+			throw e;
+		}
+		return output;
 	}
 
 }

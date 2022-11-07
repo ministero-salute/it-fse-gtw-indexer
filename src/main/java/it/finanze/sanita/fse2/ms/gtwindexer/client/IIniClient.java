@@ -5,7 +5,9 @@ package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
 import java.io.Serializable;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 
 /**
  * Interface of Ini client.
@@ -29,5 +31,12 @@ public interface IIniClient extends Serializable {
      * @return Outcome of service call.
      */
     IniPublicationResponseDTO sendReplaceData(String workflowInstanceId);
+
+    /**
+     * Execute the call to ini-client for deletion purpose
+     * @param iniReq The delete request
+     * @return Outcome of service call
+     */
+    IniTraceResponseDTO delete(IniDeleteRequestDTO iniReq);
 
 }

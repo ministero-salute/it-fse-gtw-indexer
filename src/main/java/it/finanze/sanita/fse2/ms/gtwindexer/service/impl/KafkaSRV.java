@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,7 +105,17 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 		if(req != null) {
 			// Iterate
 			for (int i = 0; i < kafkaConsumerPropCFG.getNRetry() && !esito; ++i) {
+				// Execute request
+				IniTraceResponseDTO res = iniClient.delete(req);
+				// Everything has been resolved
+				if(res != null && Boolean.TRUE.equals(res.getEsito())) {
+					// Update transaction status
+					sendStatusMessage(wif, EventTypeEnum.SEND_TO_INI, EventStatusEnum.SUCCESS, new Gson().toJson(res));
+					// Quit flag
+					esito = true;
+				} else {
 
+				}
 			}
 		}
 	}
