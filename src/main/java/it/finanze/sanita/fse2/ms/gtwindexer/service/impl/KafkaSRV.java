@@ -3,13 +3,21 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
-import java.util.Date;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.Gson;
+import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,27 +25,14 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
-import com.google.gson.Gson;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
-import lombok.extern.slf4j.Slf4j;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.isNullOrEmpty;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
 
 /**
  * 
@@ -91,33 +86,59 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 		// Retrieve request body
 		String wif = cr.key(), request = cr.value();
 		IniDeleteRequestDTO req = null;
-		boolean esito = false;
 		// Convert to delete request
 		try {
+			// Get object
 			req = new Gson().fromJson(request, IniDeleteRequestDTO.class);
-		} catch (JsonSyntaxException ignored) {
-			log.error("Unable to deserialize request with wif: {}", wif);
+			// Require not null
+			Objects.requireNonNull(req, "The request payload cannot be null");
+		} catch (Exception e) {
+			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 		}
 
 		// ====================
 		// Retry iterations
 		// ====================
-		if(req != null) {
-			// Iterate
-			for (int i = 0; i < kafkaConsumerPropCFG.getNRetry() && !esito; ++i) {
+		boolean exit = false;
+		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
+		// Iterate
+		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
+			try {
 				// Execute request
 				IniTraceResponseDTO res = iniClient.delete(req);
 				// Everything has been resolved
-				if(res != null && Boolean.TRUE.equals(res.getEsito())) {
-					// Update transaction status
-					sendStatusMessage(wif, EventTypeEnum.SEND_TO_INI, EventStatusEnum.SUCCESS, new Gson().toJson(res));
-					// Quit flag
-					esito = true;
+				if (Boolean.TRUE.equals(res.getEsito())) {
+					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
 				} else {
-
+					sendStatusMessage(wif,  SEND_TO_INI, BLOCKING_ERROR, new Gson().toJson(res));
+				}
+				// Quit flag
+				exit = true;
+			}catch (Exception e) {
+				// Assign
+				ex = e;
+				// Display help
+				deadLetterHelper(e);
+				// Try to identify the exception type
+				Optional<EventStatusEnum> type = kafkaConsumerPropCFG.asExceptionType(e);
+				// If we found it, we are good to make an action, otherwise, let's retry
+				if(type.isPresent()) {
+					// Get type [BLOCKING or NON_BLOCKING_ERROR]
+					EventStatusEnum status = type.get();
+					// Send to kafka
+					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
+					// We need to exit if a blocking error
+					if(status == BLOCKING_ERROR) exit = true;
 				}
 			}
 		}
+
+		// We didn't exit properly from the loop,
+		// We reached the max amount of retries
+		if(!exit) {
+			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+		}
+
 	}
 
 	/**
@@ -157,7 +178,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 					eventStatus(eventStatus).
 					message(message).
 					build();
-			String json = StringUtility.toJSONJackson(statusManagerMessage);
+			String json = toJSONJackson(statusManagerMessage);
 			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), workflowInstanceId, json, true);
 		} catch(Exception ex) {
 			log.error("Error while send status message on indexer : " , ex);
@@ -170,7 +191,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 		final Date startDateOperation = new Date();
 		IndexerValueDTO valueInfo = new IndexerValueDTO();
 
-		EventTypeEnum eventStepEnum = EventTypeEnum.SEND_TO_INI;
+		EventTypeEnum eventStepEnum = SEND_TO_INI;
 
 		boolean esito = false;
 		int counter = 0;
@@ -198,22 +219,22 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 					throw new BlockingIniException(response.getErrorMessage());
 				} 
 			 
-				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.SUCCESS, null);
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, null);
 				esito = true;
 			} catch (Exception e) {
-				String errorMessage = StringUtility.isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
+				String errorMessage = isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
 				log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 				deadLetterHelper(e);
 				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())) {
-					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, errorMessage);
+					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, BLOCKING_ERROR, errorMessage);
 					throw e;
 				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())){
-					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.NON_BLOCKING_ERROR, errorMessage);
+					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, NON_BLOCKING_ERROR, errorMessage);
 					throw e;
 				} else {
 					counter++;
 					if(counter==kafkaConsumerPropCFG.getNRetry()) {
-						sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, EventStatusEnum.BLOCKING_ERROR, "Massimo numero di retry raggiunto :" + errorMessage);
+						sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, BLOCKING_ERROR, "Massimo numero di retry raggiunto :" + errorMessage);
 					}
 				}
 			}
@@ -243,7 +264,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 	 */
 	private boolean isHandledPerMock(IniPublicationResponseDTO response) {
 
-		boolean isIpConfigurationError = response != null && !StringUtility.isNullOrEmpty(response.getErrorMessage()) && response.getErrorMessage().contains("Invalid region ip");
+		boolean isIpConfigurationError = response != null && !isNullOrEmpty(response.getErrorMessage()) && response.getErrorMessage().contains("Invalid region ip");
 		return (profileUtility.isTestProfile() || profileUtility.isDevOrDockerProfile()) && isIpConfigurationError;
 	}
 

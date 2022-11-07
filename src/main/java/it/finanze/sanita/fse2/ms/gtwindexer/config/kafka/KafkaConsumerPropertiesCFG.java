@@ -5,7 +5,10 @@ package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -126,5 +129,16 @@ public class KafkaConsumerPropertiesCFG implements Serializable {
 	 */
 	@Value("#{${kafka.consumer.temporary-exc}}")
 	private List<String> temporaryExceptions;
+
+	public Optional<EventStatusEnum> asExceptionType(Exception e) {
+		// Retrieve exception identifier
+		EventStatusEnum status = null;
+		String identifier = ExceptionUtils.getRootCause(e).getClass().getCanonicalName();
+		// Identify
+		if(deadLetterExceptions.contains(identifier)) status = EventStatusEnum.BLOCKING_ERROR;
+		if(temporaryExceptions.contains(identifier)) status = EventStatusEnum.NON_BLOCKING_ERROR;
+		// Return
+		return Optional.ofNullable(status);
+	}
 
 }
