@@ -5,6 +5,10 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonSyntaxException;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +83,30 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.retry}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
-		log.info("retryDeleteListener() - {} {}", cr, messageHeaders);
+
+		// ====================
+		// Deserialize request
+		// ====================
+		// Retrieve request body
+		String wif = cr.key(), request = cr.value();
+		IniDeleteRequestDTO req = null;
+		boolean esito = false;
+		// Convert to delete request
+		try {
+			req = new Gson().fromJson(request, IniDeleteRequestDTO.class);
+		} catch (JsonSyntaxException ignored) {
+			log.error("Unable to deserialize request with wif: {}", wif);
+		}
+
+		// ====================
+		// Retry iterations
+		// ====================
+		if(req != null) {
+			// Iterate
+			for (int i = 0; i < kafkaConsumerPropCFG.getNRetry() && !esito; ++i) {
+
+			}
+		}
 	}
 
 	/**
