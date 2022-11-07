@@ -5,7 +5,6 @@ package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
 import java.io.Serializable;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 
 /**
@@ -29,6 +28,6 @@ public interface IIniClient extends Serializable {
      * @param updateInfo Information of document to update.
      * @return Outcome of service call.
      */
-    IniPublicationResponseDTO sendReplaceData(IndexerValueDTO updateInfo);
+    IniPublicationResponseDTO sendReplaceData(String workflowInstanceId);
 
 }

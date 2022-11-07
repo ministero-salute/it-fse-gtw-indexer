@@ -67,15 +67,15 @@ public class IniClient implements IIniClient {
 	}
 
 	@Override
-	public IniPublicationResponseDTO sendReplaceData(IndexerValueDTO updateInfo) {
+	public IniPublicationResponseDTO sendReplaceData(final String workflowInstanceId) {
 
 		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
-		log.debug("INI Client - Sending update data to INI to update document with identifier: {}", updateInfo.getIdDoc());
+		log.debug("INI Client - Sending update data to INI to update document with wii: {}", workflowInstanceId);
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
 
-		HttpEntity<?> entity = new HttpEntity<>(new Gson().toJson(updateInfo), headers);
+		HttpEntity<?> entity = new HttpEntity<>(workflowInstanceId, headers);
 
 		ResponseEntity<IniPublicationResponseDTO> response = null;
 		try {
