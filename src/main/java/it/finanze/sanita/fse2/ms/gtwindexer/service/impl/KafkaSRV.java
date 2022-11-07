@@ -3,21 +3,17 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
-import com.google.gson.Gson;
-import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
-import lombok.extern.slf4j.Slf4j;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.isNullOrEmpty;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
+
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
+
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,14 +21,29 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.Objects;
-import java.util.Optional;
+import com.google.gson.Gson;
 
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
-import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.isNullOrEmpty;
-import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
+import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 
@@ -42,7 +53,7 @@ import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJ
  */
 @Service
 @Slf4j
-public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
+public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	/**
 	 * Serial version uid.
@@ -135,6 +146,50 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV{
 
 		// We didn't exit properly from the loop,
 		// We reached the max amount of retries
+		if(!exit) {
+			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+		}
+
+	}
+	
+	@Override
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
+		String wif = cr.key();
+		String request = cr.value();
+		IniMetadataUpdateReqDTO req = null;
+		// Convert to delete request
+		try {
+			// Get object
+			req = new Gson().fromJson(request, IniMetadataUpdateReqDTO.class);
+			Objects.requireNonNull(req, "The request payload cannot be null");
+		} catch (Exception e) {
+			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+		}
+
+		boolean exit = false;
+		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
+		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
+			try {
+				IniTraceResponseDTO res = iniClient.sendUpdateData(req);
+				if (Boolean.TRUE.equals(res.getEsito())) {
+					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
+				} else {
+					sendStatusMessage(wif,  SEND_TO_INI, BLOCKING_ERROR, new Gson().toJson(res));
+				}
+				exit = true;
+			}catch (Exception e) {
+				ex = e;
+				deadLetterHelper(e);
+				Optional<EventStatusEnum> type = kafkaConsumerPropCFG.asExceptionType(e);
+				if(type.isPresent()) {
+					EventStatusEnum status = type.get();
+					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
+					if(status == BLOCKING_ERROR) exit = true;
+				}
+			}
+		}
+
 		if(!exit) {
 			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
 		}

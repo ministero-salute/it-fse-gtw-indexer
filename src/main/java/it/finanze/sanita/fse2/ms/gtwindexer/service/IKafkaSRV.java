@@ -52,5 +52,7 @@ public interface IKafkaSRV extends Serializable {
 	void sendStatusMessage(String workflowInstanceId, EventTypeEnum eventType, EventStatusEnum eventStatus, String exception);
 
 	void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders);
+	
+	void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders);
 
 }

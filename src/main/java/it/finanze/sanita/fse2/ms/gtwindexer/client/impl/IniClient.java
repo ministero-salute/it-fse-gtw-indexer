@@ -3,24 +3,21 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.client.impl;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.gson.Gson;
-
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.MicroservicesURLCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.ConnectionRefusedException;
 import lombok.extern.slf4j.Slf4j;
@@ -112,6 +109,29 @@ public class IniClient implements IIniClient {
 			throw e;
 		}
 		return output;
+	}
+
+	@Override
+	public IniTraceResponseDTO sendUpdateData(IniMetadataUpdateReqDTO iniReq) {
+		IniTraceResponseDTO out = null;
+		try {
+			log.debug("INI Client - Calling INI to execute update metadati");
+
+			// Build headers.
+			HttpEntity<Object> entity = new HttpEntity<>(iniReq, null);
+
+			// Build endpoint e call.
+			String endpoint = msUrlCFG.getIniClientHost() + "/v1/ini-update";
+			ResponseEntity<IniTraceResponseDTO> restExchange = restTemplate.exchange(endpoint, HttpMethod.PUT, entity, IniTraceResponseDTO.class);
+
+			// Gestione response
+			out = restExchange.getBody();
+		} catch (Exception e) {
+			log.error("Errore durante l'invocazione dell' API update(). ", e);
+			throw e;
+		}
+
+		return out;
 	}
 
 }
