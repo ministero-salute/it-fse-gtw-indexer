@@ -108,7 +108,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			throw e;
+			throw new BlockingIniException(e.getMessage());
 		}
 
 		// ====================
@@ -141,8 +141,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					EventStatusEnum status = type.get();
 					// Send to kafka
 					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
-					// We need to exit if a blocking error
-					if(status == BLOCKING_ERROR) throw e;
+					// We are going re-process it
+					throw e;
 				}
 			}
 		}
@@ -151,6 +151,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// We reached the max amount of retries
 		if(!exit) {
 			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+			throw new BlockingIniException(ex.getMessage());
 		}
 
 	}
@@ -171,7 +172,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			throw e;
+			throw new BlockingIniException(e.getMessage());
 		}
 
 		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
@@ -191,13 +192,14 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				if(type.isPresent()) {
 					EventStatusEnum status = type.get();
 					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
-					if(status == BLOCKING_ERROR) throw e;
+					throw e;
 				}
 			}
 		}
 
 		if(!exit) {
 			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+			throw new BlockingIniException(ex.getMessage());
 		}
 
 	}

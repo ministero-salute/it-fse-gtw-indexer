@@ -8,13 +8,13 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.ConnectionRefusedException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -33,9 +33,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.ConnectException;
-import java.util.*;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.*;
@@ -233,7 +232,7 @@ class KafkaTest extends AbstractTest {
 	void retryDeleteTestSuccess() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
@@ -247,69 +246,69 @@ class KafkaTest extends AbstractTest {
 	void retryDeleteTestFailure() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
 		doReturn(FAILURE_RESPONSE_INI_DTO).when(iniClient).delete(any(IniDeleteRequestDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), anyString());
 		// Start
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
 	@Test
 	void retryDeleteTestWithInvalidPayload() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			EMPTY_JSON
 		);
 		// Provide mock knowledge
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), anyString());
 		// Start
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+		assertThrows(BlockingIniException.class,() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
 	@Test
 	void retryDeleteTestWithBlockingError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
 		doThrow(NullPointerException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 		// Start
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+		assertThrows(NullPointerException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
 	@Test
 	void retryDeleteTestWithNotBlockingError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
 		doThrow(RestClientException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 		// Start
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+		assertThrows(RestClientException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
 	@Test
 	void retryDeleteTestWithUnknownError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
 			getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
 		doThrow(RuntimeException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 		// Start
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
 }
