@@ -6,6 +6,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.isNullOrEmpty;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
@@ -106,6 +107,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			Objects.requireNonNull(req, "The request payload cannot be null");
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
 			exit = true;
 		}
 
@@ -168,6 +170,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			Objects.requireNonNull(req, "The request payload cannot be null");
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
 			exit = true;
 		}
 
