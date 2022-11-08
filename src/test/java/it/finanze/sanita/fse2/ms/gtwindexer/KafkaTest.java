@@ -229,7 +229,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestSuccess() {
+	void retryTestSuccess() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
@@ -243,7 +243,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestFailure() {
+	void retryTestFailure() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
@@ -257,7 +257,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestWithInvalidPayload() {
+	void retryTestWithInvalidPayload() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
@@ -270,7 +270,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestWithBlockingError() {
+	void retryTestWithBlockingError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
@@ -284,7 +284,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestWithNotBlockingError() {
+	void retryTestWithNotBlockingError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
@@ -298,7 +298,7 @@ class KafkaTest extends AbstractTest {
 	}
 
 	@Test
-	void retryDeleteTestWithUnknownError() {
+	void retryTestWithUnknownError() {
 		// Create fake request
 		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
 			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
