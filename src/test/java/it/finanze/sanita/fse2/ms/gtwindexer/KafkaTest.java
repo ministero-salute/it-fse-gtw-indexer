@@ -1,9 +1,11 @@
 package it.finanze.sanita.fse2.ms.gtwindexer;
 
 import com.google.gson.Gson;
+import it.finanze.sanita.fse2.ms.gtwindexer.client.impl.IniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
@@ -28,14 +30,19 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.ConnectException;
 import java.util.*;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.concurrent.ExecutionException;
 
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ComponentScan(basePackages = {Constants.ComponentScan.BASE})
@@ -44,11 +51,14 @@ import static org.mockito.ArgumentMatchers.*;
 @EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })
 class KafkaTest extends AbstractTest {
 	
-	@Autowired
+	@SpyBean
 	private IKafkaSRV kafkaSRV;
 
 	@Autowired
 	private KafkaTopicCFG kafkaTopicCFG;
+
+	@SpyBean
+	private IniClient iniClient;
 
 	@SpyBean
 	private RestTemplate restTemplate;
@@ -69,11 +79,11 @@ class KafkaTest extends AbstractTest {
 		records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
 		records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
 		
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
-		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicMedium, TestConstants.testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicHigh, TestConstants.testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicMedium, testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicHigh, testWorkflowInstanceId, kafkaValue);
 
 		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
 		ConsumerRecord<String, String> recordMedium = new ConsumerRecord<String,String>(topicMedium, 1, 0, topicMedium, kafkaValue);
@@ -81,7 +91,7 @@ class KafkaTest extends AbstractTest {
 
 		IniPublicationResponseDTO responseDTO = new IniPublicationResponseDTO();
 		responseDTO.setEsito(true);
-		Mockito.doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
+		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -105,11 +115,11 @@ class KafkaTest extends AbstractTest {
 		records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
 		records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
-		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicMedium, TestConstants.testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicHigh, TestConstants.testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicMedium, testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicHigh, testWorkflowInstanceId, kafkaValue);
 
 		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
 		ConsumerRecord<String, String> recordMedium = new ConsumerRecord<String,String>(topicMedium, 1, 0, topicMedium, kafkaValue);
@@ -119,7 +129,7 @@ class KafkaTest extends AbstractTest {
 		responseDTO.setEsito(false);
 
 		// Connection refused
-		Mockito.doThrow(new ConnectionRefusedException("uri", "error")).when(restTemplate)
+		doThrow(new ConnectionRefusedException("uri", "error")).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(ConnectionRefusedException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -127,7 +137,7 @@ class KafkaTest extends AbstractTest {
 		assertThrows(ConnectionRefusedException.class, () -> kafkaSRV.highPriorityListener(recordHigh, headers));
 
 		// ResourceAccessException
-		Mockito.doThrow(new ResourceAccessException("uri")).when(restTemplate)
+		doThrow(new ResourceAccessException("uri")).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(ResourceAccessException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -135,7 +145,7 @@ class KafkaTest extends AbstractTest {
 		assertThrows(ResourceAccessException.class, () -> kafkaSRV.highPriorityListener(recordHigh, headers));
 
 		// Generic exception
-		Mockito.doThrow(new HttpServerErrorException(HttpStatus.BAD_GATEWAY)).when(restTemplate)
+		doThrow(new HttpServerErrorException(HttpStatus.BAD_GATEWAY)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(BusinessException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -143,7 +153,7 @@ class KafkaTest extends AbstractTest {
 		assertThrows(BusinessException.class, () -> kafkaSRV.highPriorityListener(recordHigh, headers));
 
 		// Http error
-		Mockito.doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
+		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -161,13 +171,13 @@ class KafkaTest extends AbstractTest {
 		Map<TopicPartition, List<ConsumerRecord<String, String>>> records = new LinkedHashMap<>();
 		records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
 
 		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
 		IniPublicationResponseDTO responseDTO = new IniPublicationResponseDTO();
 		responseDTO.setEsito(true);
 
-		Mockito.doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
+		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
 						.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
@@ -185,9 +195,9 @@ class KafkaTest extends AbstractTest {
 
 		records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
 
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(TestConstants.testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
 
-		this.kafkaInit(topicLow, TestConstants.testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
 
 		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
 
@@ -195,27 +205,111 @@ class KafkaTest extends AbstractTest {
 		responseDTO.setEsito(false);
 
 		// Connection refused
-		Mockito.doThrow(new ConnectionRefusedException("uri", "error")).when(restTemplate)
+		doThrow(new ConnectionRefusedException("uri", "error")).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(ConnectionRefusedException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
 
 		// ResourceAccessException
-		Mockito.doThrow(new ResourceAccessException("uri")).when(restTemplate)
+		doThrow(new ResourceAccessException("uri")).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(ResourceAccessException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
 
 		// Generic exception
-		Mockito.doThrow(new HttpServerErrorException(HttpStatus.BAD_GATEWAY)).when(restTemplate)
+		doThrow(new HttpServerErrorException(HttpStatus.BAD_GATEWAY)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertThrows(BusinessException.class, () -> kafkaSRV.lowPriorityListener(recordLow, headers));
 
 		// Http error
-		Mockito.doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
+		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
 	}
+
+	@Test
+	void retryDeleteTestSuccess() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// Provide mock knowledge
+		doReturn(SUCCESS_RESPONSE_INI_DTO).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), anyString());
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
+	@Test
+	void retryDeleteTestFailure() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// Provide mock knowledge
+		doReturn(FAILURE_RESPONSE_INI_DTO).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), anyString());
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
+	@Test
+	void retryDeleteTestWithInvalidPayload() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			EMPTY_JSON
+		);
+		// Provide mock knowledge
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), anyString());
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
+	@Test
+	void retryDeleteTestWithBlockingError() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// Provide mock knowledge
+		doThrow(NullPointerException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
+	@Test
+	void retryDeleteTestWithNotBlockingError() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// Provide mock knowledge
+		doThrow(RestClientException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
+	@Test
+	void retryDeleteTestWithUnknownError() {
+		// Create fake request
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// Provide mock knowledge
+		doThrow(RuntimeException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+		// Start
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	}
+
 }
