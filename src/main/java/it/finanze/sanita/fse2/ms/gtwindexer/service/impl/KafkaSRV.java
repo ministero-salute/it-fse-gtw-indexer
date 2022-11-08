@@ -97,6 +97,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// Retrieve request body
 		String wif = cr.key(), request = cr.value();
 		IniDeleteRequestDTO req = null;
+		boolean exit = false;
 		// Convert to delete request
 		try {
 			// Get object
@@ -105,12 +106,12 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			Objects.requireNonNull(req, "The request payload cannot be null");
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+			exit = true;
 		}
 
 		// ====================
 		// Retry iterations
 		// ====================
-		boolean exit = false;
 		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
 		// Iterate
 		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
@@ -158,6 +159,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		String wif = cr.key();
 		String request = cr.value();
 		IniMetadataUpdateReqDTO req = null;
+		boolean exit = false;
+
 		// Convert to delete request
 		try {
 			// Get object
@@ -165,9 +168,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			Objects.requireNonNull(req, "The request payload cannot be null");
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+			exit = true;
 		}
 
-		boolean exit = false;
 		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
 		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
 			try {
