@@ -89,7 +89,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	}
 
 	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.retry}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.delete-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
 
 		// ====================
@@ -97,7 +97,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// ====================
 		// Retrieve request body
 		String wif = cr.key(), request = cr.value();
-		IniDeleteRequestDTO req = null;
+		IniDeleteRequestDTO req;
 		boolean exit = false;
 		// Convert to delete request
 		try {
@@ -108,7 +108,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			exit = true;
+			throw e;
 		}
 
 		// ====================
@@ -124,7 +124,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				if (Boolean.TRUE.equals(res.getEsito())) {
 					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
 				} else {
-					sendStatusMessage(wif,  SEND_TO_INI, BLOCKING_ERROR, new Gson().toJson(res));
+					throw new BlockingIniException(res.getErrorMessage());
 				}
 				// Quit flag
 				exit = true;
@@ -142,7 +142,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					// Send to kafka
 					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
 					// We need to exit if a blocking error
-					if(status == BLOCKING_ERROR) exit = true;
+					if(status == BLOCKING_ERROR) throw e;
 				}
 			}
 		}
@@ -160,7 +160,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
 		String wif = cr.key();
 		String request = cr.value();
-		IniMetadataUpdateReqDTO req = null;
+		IniMetadataUpdateReqDTO req;
 		boolean exit = false;
 
 		// Convert to delete request
@@ -171,7 +171,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			exit = true;
+			throw e;
 		}
 
 		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
@@ -181,7 +181,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				if (Boolean.TRUE.equals(res.getEsito())) {
 					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
 				} else {
-					sendStatusMessage(wif,  SEND_TO_INI, BLOCKING_ERROR, new Gson().toJson(res));
+					throw new BlockingIniException(res.getErrorMessage());
 				}
 				exit = true;
 			}catch (Exception e) {
@@ -191,7 +191,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				if(type.isPresent()) {
 					EventStatusEnum status = type.get();
 					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
-					if(status == BLOCKING_ERROR) exit = true;
+					if(status == BLOCKING_ERROR) throw e;
 				}
 			}
 		}
