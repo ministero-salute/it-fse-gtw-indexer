@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.client.base.ClientCallback;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,118 +91,14 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.delete-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
-	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
-
-		// ====================
-		// Deserialize request
-		// ====================
-		// Retrieve request body
-		String wif = cr.key(), request = cr.value();
-		IniDeleteRequestDTO req;
-		boolean exit = false;
-		// Convert to delete request
-		try {
-			// Get object
-			req = new Gson().fromJson(request, IniDeleteRequestDTO.class);
-			// Require not null
-			Objects.requireNonNull(req, "The request payload cannot be null");
-		} catch (Exception e) {
-			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
-			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			throw new BlockingIniException(e.getMessage());
-		}
-
-		// ====================
-		// Retry iterations
-		// ====================
-		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
-		// Iterate
-		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
-			try {
-				// Execute request
-				IniTraceResponseDTO res = iniClient.delete(req);
-				// Everything has been resolved
-				if (Boolean.TRUE.equals(res.getEsito())) {
-					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
-				} else {
-					throw new BlockingIniException(res.getErrorMessage());
-				}
-				// Quit flag
-				exit = true;
-			}catch (Exception e) {
-				// Assign
-				ex = e;
-				// Display help
-				deadLetterHelper(e);
-				// Try to identify the exception type
-				Optional<EventStatusEnum> type = kafkaConsumerPropCFG.asExceptionType(e);
-				// If we found it, we are good to make an action, otherwise, let's retry
-				if(type.isPresent()) {
-					// Get type [BLOCKING or NON_BLOCKING_ERROR]
-					EventStatusEnum status = type.get();
-					// Send to kafka
-					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
-					// We are going re-process it
-					throw e;
-				}
-			}
-		}
-
-		// We didn't exit properly from the loop,
-		// We reached the max amount of retries
-		if(!exit) {
-			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
-			throw new BlockingIniException(ex.getMessage());
-		}
-
+	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws Exception {
+		loop(cr, IniDeleteRequestDTO.class, req -> iniClient.delete(req));
 	}
 	
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
-	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) {
-		String wif = cr.key();
-		String request = cr.value();
-		IniMetadataUpdateReqDTO req;
-		boolean exit = false;
-
-		// Convert to delete request
-		try {
-			// Get object
-			req = new Gson().fromJson(request, IniMetadataUpdateReqDTO.class);
-			Objects.requireNonNull(req, "The request payload cannot be null");
-		} catch (Exception e) {
-			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
-			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
-			throw new BlockingIniException(e.getMessage());
-		}
-
-		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
-		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
-			try {
-				IniTraceResponseDTO res = iniClient.sendUpdateData(req);
-				if (Boolean.TRUE.equals(res.getEsito())) {
-					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
-				} else {
-					throw new BlockingIniException(res.getErrorMessage());
-				}
-				exit = true;
-			}catch (Exception e) {
-				ex = e;
-				deadLetterHelper(e);
-				Optional<EventStatusEnum> type = kafkaConsumerPropCFG.asExceptionType(e);
-				if(type.isPresent()) {
-					EventStatusEnum status = type.get();
-					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
-					throw e;
-				}
-			}
-		}
-
-		if(!exit) {
-			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
-			throw new BlockingIniException(ex.getMessage());
-		}
-
+	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws Exception {
+		loop(cr, IniMetadataUpdateReqDTO.class, req -> iniClient.sendUpdateData(req));
 	}
 
 	/**
@@ -329,6 +226,71 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 		boolean isIpConfigurationError = response != null && !isNullOrEmpty(response.getErrorMessage()) && response.getErrorMessage().contains("Invalid region ip");
 		return (profileUtility.isTestProfile() || profileUtility.isDevOrDockerProfile()) && isIpConfigurationError;
+	}
+
+	private <T> void loop(ConsumerRecord<String, String> cr, Class<T> clazz, ClientCallback<T, IniTraceResponseDTO> cb) throws Exception {
+		// ====================
+		// Deserialize request
+		// ====================
+		// Retrieve request body
+		String wif = cr.key(), request = cr.value();
+		T req;
+		boolean exit = false;
+		// Convert to delete request
+		try {
+			// Get object
+			req = new Gson().fromJson(request, clazz);
+			// Require not null
+			Objects.requireNonNull(req, "The request payload cannot be null");
+		} catch (Exception e) {
+			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
+			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
+			throw new BlockingIniException(e.getMessage());
+		}
+
+		// ====================
+		// Retry iterations
+		// ====================
+		Exception ex = new Exception("Errore generico durante l'invocazione del client di ini");
+		// Iterate
+		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
+			try {
+				// Execute request
+				IniTraceResponseDTO res = cb.request(req);
+				// Everything has been resolved
+				if (Boolean.TRUE.equals(res.getEsito())) {
+					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
+				} else {
+					throw new BlockingIniException(res.getErrorMessage());
+				}
+				// Quit flag
+				exit = true;
+			}catch (Exception e) {
+				// Assign
+				ex = e;
+				// Display help
+				deadLetterHelper(e);
+				// Try to identify the exception type
+				Optional<EventStatusEnum> type = kafkaConsumerPropCFG.asExceptionType(e);
+				// If we found it, we are good to make an action, otherwise, let's retry
+				if(type.isPresent()) {
+					// Get type [BLOCKING or NON_BLOCKING_ERROR]
+					EventStatusEnum status = type.get();
+					// Send to kafka
+					sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
+					// We are going re-process it
+					throw e;
+				}
+			}
+		}
+
+		// We didn't exit properly from the loop,
+		// We reached the max amount of retries
+		if(!exit) {
+			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+			throw new BlockingIniException(ex.getMessage());
+		}
+
 	}
 
 }
