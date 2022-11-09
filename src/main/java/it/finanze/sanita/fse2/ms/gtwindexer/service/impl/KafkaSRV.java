@@ -232,7 +232,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// Deserialize request
 		// ====================
 		// Retrieve request body
-		String wif = cr.key(), request = cr.value();
+		String wif = cr.key();
+		String request = cr.value();
 		T req;
 		boolean exit = false;
 		// Convert to delete request
