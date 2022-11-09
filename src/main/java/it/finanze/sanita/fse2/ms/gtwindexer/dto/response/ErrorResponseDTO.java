@@ -12,7 +12,6 @@ import lombok.EqualsAndHashCode;
 /**
  * The Class ErrorResponseDTO.
  *
- * @author vincenzoingenito
  * 
  * 	Error response.
  */

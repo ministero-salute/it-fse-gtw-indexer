@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Production implemention of Ini Client.
  * 
- * @author vincenzoingenito
  */
 @Slf4j
 @Component 

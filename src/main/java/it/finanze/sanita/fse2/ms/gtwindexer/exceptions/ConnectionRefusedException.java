@@ -4,7 +4,6 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.exceptions;
 
 /**
- * @author vincenzoingenito
  * 
  * Connection refused error exception.
  *

@@ -14,7 +14,6 @@ import lombok.Data;
 import javax.annotation.PostConstruct;
 
 /**
- *	@author vincenzoingenito
  *
  *	Kafka topic configuration.
  */

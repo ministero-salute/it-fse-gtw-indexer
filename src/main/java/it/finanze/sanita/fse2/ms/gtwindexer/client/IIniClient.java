@@ -13,7 +13,6 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 /**
  * Interface of Ini client.
  * 
- * @author vincenzoingenito
  */
 public interface IIniClient extends Serializable {
 
