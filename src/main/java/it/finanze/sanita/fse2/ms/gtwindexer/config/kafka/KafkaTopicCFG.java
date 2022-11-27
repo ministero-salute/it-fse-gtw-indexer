@@ -57,7 +57,7 @@ public class KafkaTopicCFG {
 	/**
 	 * Dispatcher indexer retry topic (update)
 	 */
-	@Value("kafka.dispatcher-indexer.delete-retry-topic")
+	@Value("kafka.dispatcher-indexer.update-retry-topic")
 	private String dispatcherIndexerUpdateRetryTopic;
 
 	/**
