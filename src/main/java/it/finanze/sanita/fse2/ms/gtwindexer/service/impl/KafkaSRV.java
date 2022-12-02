@@ -45,6 +45,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -178,7 +179,11 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					throw new BlockingIniException(response.getErrorMessage());
 				} 
 			 
-				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, null);
+				if(Boolean.TRUE.equals(response.getEsito()) && !StringUtility.isNullOrEmpty(response.getErrorMessage())) {
+					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, "REGIME DI MOCK ATTENZIONE");
+				} else {
+					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, null);
+				}
 				esito = true;
 			} catch (Exception e) {
 				String errorMessage = isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
