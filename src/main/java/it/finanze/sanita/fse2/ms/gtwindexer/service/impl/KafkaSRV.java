@@ -17,7 +17,6 @@ import java.util.Optional;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.omg.CORBA.portable.UnknownException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.MessageHeaders;
@@ -98,7 +97,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	}
 	
 	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-update}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws Exception {
 		loop(cr, IniMetadataUpdateReqDTO.class, req -> iniClient.sendUpdateData(req));
 	}
@@ -166,7 +165,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				log.debug("Consuming Transaction Event - Message received with key {}", cr.key());
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
-				if("EXCEPTION_UNKNOWN".equals(valueInfo.getIdDoc()) && profileUtility.isDevOrDockerProfile()) {
+				if(valueInfo.getIdDoc().contains("EXCEPTION_UNKNOWN") && profileUtility.isDevOrDockerProfile()) {
 					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
 				}
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
