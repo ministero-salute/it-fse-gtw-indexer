@@ -4,6 +4,7 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR_MAX_RETRY;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
@@ -297,7 +298,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// We didn't exit properly from the loop,
 		// We reached the max amount of retries
 		if(!exit) {
-			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR, "Massimo numero di retry raggiunto: " + ex.getMessage());
+			sendStatusMessage(wif, SEND_TO_INI, BLOCKING_ERROR_MAX_RETRY, "Massimo numero di retry raggiunto: " + ex.getMessage());
 			throw new BlockingIniException(ex.getMessage());
 		}
 
