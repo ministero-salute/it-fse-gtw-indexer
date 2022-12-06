@@ -15,9 +15,9 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.client.base.ClientCallback;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.omg.CORBA.portable.UnknownException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.MessageHeaders;
@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import com.google.gson.Gson;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
+import it.finanze.sanita.fse2.ms.gtwindexer.client.base.ClientCallback;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
@@ -70,6 +71,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
+	
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
@@ -164,6 +166,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				log.debug("Consuming Transaction Event - Message received with key {}", cr.key());
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
+				if("EXCEPTION_UNKNOWN".equals(valueInfo.getIdDoc()) && profileUtility.isDevOrDockerProfile()) {
+					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
+				}
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
 				if (Boolean.TRUE.equals(response.getEsito()) || isHandledPerMock(response)) {
@@ -199,6 +204,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					counter++;
 					if(counter==kafkaConsumerPropCFG.getNRetry()) {
 						sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, BLOCKING_ERROR, "Massimo numero di retry raggiunto :" + errorMessage);
+						throw new BlockingIniException("Raggiunto numero max di retry" , e);
 					}
 				}
 			}
