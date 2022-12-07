@@ -3,8 +3,6 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
-import java.io.Serializable;
-
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
@@ -12,9 +10,8 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 
 /**
  * Interface of Ini client.
- * 
  */
-public interface IIniClient extends Serializable {
+public interface IIniClient {
 
     /**
      * Executes the call to ini-client for creation purpose.

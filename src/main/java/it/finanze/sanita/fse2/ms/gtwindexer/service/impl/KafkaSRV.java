@@ -170,6 +170,12 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				if(valueInfo.getIdDoc().contains("EXCEPTION_UNKNOWN") && profileUtility.isDevOrDockerProfile()) {
 					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
 				}
+				
+				if(valueInfo.getIdDoc().contains("REPLACE_UNKOWN") && profileUtility.isDevOrDockerProfile() && 
+						valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.REPLACE)) {
+					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
+				}
+				
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
 				if (Boolean.TRUE.equals(response.getEsito()) || isHandledPerMock(response)) {

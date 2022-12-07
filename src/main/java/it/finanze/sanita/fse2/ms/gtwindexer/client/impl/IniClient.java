@@ -30,16 +30,11 @@ import lombok.extern.slf4j.Slf4j;
 @Component 
 public class IniClient implements IIniClient {
 
-	/**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = -1470125906483650945L;
+	@Autowired
+	private RestTemplate restTemplate;
 
 	@Autowired
-	private transient RestTemplate restTemplate;
-
-	@Autowired
-	private transient MicroservicesURLCFG msUrlCFG;
+	private MicroservicesURLCFG msUrlCFG;
 
 	@Override
 	public IniPublicationResponseDTO sendPublicationData(final String workflowInstanceId) {
