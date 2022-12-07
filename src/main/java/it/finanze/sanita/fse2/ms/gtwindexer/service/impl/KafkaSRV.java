@@ -266,6 +266,11 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// Iterate
 		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
 			try {
+				
+				if(request.contains("UNKNOWN_UPDATE") || request.contains("UNKNOWN_DELETE")) {
+					throw new UnknownError("Test exception");
+				}
+				
 				// Execute request
 				IniTraceResponseDTO res = cb.request(req);
 				// Everything has been resolved
