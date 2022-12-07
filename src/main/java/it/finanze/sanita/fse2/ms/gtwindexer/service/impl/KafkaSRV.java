@@ -43,6 +43,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
@@ -268,7 +269,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			try {
 				
 				if(request.contains("UNKNOWN_UPDATE") || request.contains("UNKNOWN_DELETE")) {
-					throw new UnknownError("Test exception");
+					throw new UnknownException("Test exception");
 				}
 				
 				// Execute request
