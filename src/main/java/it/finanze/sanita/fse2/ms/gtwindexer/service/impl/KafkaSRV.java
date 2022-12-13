@@ -9,14 +9,12 @@ import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLO
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
-import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.isNullOrEmpty;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
 
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -43,64 +41,60 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 
- *
  * Kafka management service.
  */
 @Service
 @Slf4j
 public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
-	/**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = 987723954716001270L;
-
 	@Autowired
 	private IIniClient iniClient;
 
 	@Autowired
-	private transient ProfileUtility profileUtility;
-	
-	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
-	
+
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void lowPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		genericListener(cr, PriorityTypeEnum.LOW);
+		log.debug("Message priority: {}", PriorityTypeEnum.LOW.getDescription());
+		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.LOW.getQueue();
+		genericListener(cr, destTopic);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void mediumPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		genericListener(cr, PriorityTypeEnum.MEDIUM);
+		log.debug("Message priority: {}", PriorityTypeEnum.MEDIUM.getDescription());
+		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.MEDIUM.getQueue();
+		genericListener(cr, destTopic);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		genericListener(cr, PriorityTypeEnum.HIGH);
+		log.debug("Message priority: {}", PriorityTypeEnum.HIGH.getDescription());
+		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.HIGH.getQueue();
+		genericListener(cr, destTopic);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.delete-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws Exception {
+		log.debug("Retry delete listener");
 		loop(cr, IniDeleteRequestDTO.class, req -> iniClient.delete(req));
 	}
-	
+
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-update}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryUpdateListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws Exception {
+		log.debug("Retry update listener");
 		loop(cr, IniMetadataUpdateReqDTO.class, req -> iniClient.sendUpdateData(req));
 	}
 
@@ -149,8 +143,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		}
 	}
 
-	private void genericListener(final ConsumerRecord<String, String> cr, PriorityTypeEnum priorityType) {
-		log.debug("Message priority: {}", priorityType.getDescription());
+	private void genericListener(final ConsumerRecord<String, String> cr, final String destTopic) {
 		final Date startDateOperation = new Date();
 		IndexerValueDTO valueInfo = new IndexerValueDTO();
 
@@ -164,47 +157,37 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		while(Boolean.FALSE.equals(esito) && counter<=kafkaConsumerPropCFG.getNRetry()) {
 			try {
 				String key = cr.key();
-				log.debug("Consuming Transaction Event - Message received with key {}", cr.key());
+				log.debug("Consuming Transaction Event - Message received with key {}", key);
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
-				if(valueInfo.getIdDoc().contains("EXCEPTION_UNKNOWN") && profileUtility.isDevOrDockerProfile()) {
-					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
-				}
-				
-				if(valueInfo.getIdDoc().contains("REPLACE_UNKOWN") && profileUtility.isDevOrDockerProfile() && 
-						valueInfo.getEdsDPOperation().equals(ProcessorOperationEnum.REPLACE)) {
-					throw new it.finanze.sanita.fse2.ms.gtwindexer.exceptions.UnknownException("Test exception");
-				}
-				
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
-				if (Boolean.TRUE.equals(response.getEsito()) || isHandledPerMock(response)) {
+				if (Boolean.TRUE.equals(response.getEsito())) {
 					log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 					callIni = false;
-					
+
 					if(sendMessageToPublisher) {
-						String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + priorityType.getQueue();
 						sendMessage(destTopic, key, cr.value(), true);
 						sendMessageToPublisher = false;
 					}
 				} else {
 					throw new BlockingIniException(response.getErrorMessage());
 				} 
-			 
-				if(Boolean.TRUE.equals(response.getEsito()) && !StringUtility.isNullOrEmpty(response.getErrorMessage())) {
-					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, "REGIME DI MOCK ATTENZIONE");
-				} else {
-					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, null);
-				}
+
+				sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, SUCCESS, null);
 				esito = true;
 			} catch (Exception e) {
-				String errorMessage = isNullOrEmpty(e.getMessage()) ? "Errore generico durante l'invocazione del client di ini" : e.getMessage();
 				log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 				deadLetterHelper(e);
-				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())) {
+				String errorMessage = "Errore generico durante l'invocazione del client di ini";
+				if(StringUtility.isNullOrEmpty(e.getMessage())){
+					errorMessage = e.getMessage();
+				} 
+
+				if(kafkaConsumerPropCFG.getDeadLetterExceptions().contains(e.getClass().getCanonicalName())) {
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, BLOCKING_ERROR, errorMessage);
 					throw e;
-				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(ExceptionUtils.getRootCause(e).getClass().getCanonicalName())){
+				} else if(kafkaConsumerPropCFG.getTemporaryExceptions().contains(e.getClass().getCanonicalName())) {
 					sendStatusMessage(valueInfo.getWorkflowInstanceId(), eventStepEnum, NON_BLOCKING_ERROR, errorMessage);
 					throw e;
 				} else {
@@ -232,19 +215,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		}
 		return response;
 	}
-	 
-	/**
-	 * Returns {@code true} if the response is handled as a success for mock purposes.
-	 * 
-	 * @param response The response returnd from Ini Client
-	 * @return {@code true} if the response is handled as a success for mock purposes, {@code false} otherwise
-	 */
-	private boolean isHandledPerMock(IniPublicationResponseDTO response) {
 
-		boolean isIpConfigurationError = response != null && !isNullOrEmpty(response.getErrorMessage()) && response.getErrorMessage().contains("Invalid region ip");
-		return (profileUtility.isTestProfile() || profileUtility.isDevOrDockerProfile()) && isIpConfigurationError;
-	}
-
+ 
 	private <T> void loop(ConsumerRecord<String, String> cr, Class<T> clazz, ClientCallback<T, IniTraceResponseDTO> cb) throws Exception {
 		// ====================
 		// Deserialize request
@@ -273,11 +245,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		// Iterate
 		for (int i = 0; i <= kafkaConsumerPropCFG.getNRetry() && !exit; ++i) {
 			try {
-				
-				if(request.contains("UNKNOWN_UPDATE") || request.contains("UNKNOWN_DELETE")) {
-					throw new UnknownException("Test exception");
-				}
-				
+ 
 				// Execute request
 				IniTraceResponseDTO res = cb.request(req);
 				// Everything has been resolved

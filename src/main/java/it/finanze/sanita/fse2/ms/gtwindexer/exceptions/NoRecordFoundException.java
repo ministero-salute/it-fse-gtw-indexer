@@ -1,6 +1,6 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.exceptions;
 
-public class UnknownException extends RuntimeException {
+public class NoRecordFoundException extends RuntimeException {
 
 	/**
 	 * 
@@ -12,7 +12,7 @@ public class UnknownException extends RuntimeException {
 	 * 
 	 * @param msg	Message to be shown.
 	 */
-	public UnknownException(final String msg) {
+	public NoRecordFoundException(final String msg) {
 		super(msg);
 	}
 	
@@ -22,7 +22,7 @@ public class UnknownException extends RuntimeException {
 	 * @param msg	Message to be shown.
 	 * @param e		Exception to be shown.
 	 */
-	public UnknownException(final String msg, final Exception e) {
+	public NoRecordFoundException(final String msg, final Exception e) {
 		super(msg, e);
 	}
 	
@@ -31,7 +31,7 @@ public class UnknownException extends RuntimeException {
 	 * 
 	 * @param e	Exception to be shown.
 	 */
-	public UnknownException(final Exception e) {
+	public NoRecordFoundException(final Exception e) {
 		super(e);
 	}
 	

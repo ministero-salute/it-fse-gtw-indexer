@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Description;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -59,7 +58,6 @@ import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ComponentScan(basePackages = {Constants.ComponentScan.BASE})
 @ActiveProfiles(Constants.Profile.TEST)
 @DirtiesContext
 @EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" })

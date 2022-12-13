@@ -6,9 +6,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.dto.request;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
