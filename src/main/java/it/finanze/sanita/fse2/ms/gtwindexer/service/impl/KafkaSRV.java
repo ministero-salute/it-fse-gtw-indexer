@@ -180,7 +180,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				log.error("Error sending data to INI " + valueInfo.getWorkflowInstanceId() , OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation, ErrorLogEnum.KO_INI);
 				deadLetterHelper(e);
 				String errorMessage = "Errore generico durante l'invocazione del client di ini";
-				if(StringUtility.isNullOrEmpty(e.getMessage())){
+				if(!StringUtility.isNullOrEmpty(e.getMessage())){
 					errorMessage = e.getMessage();
 				} 
 
