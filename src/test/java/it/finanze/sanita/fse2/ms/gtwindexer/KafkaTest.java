@@ -75,41 +75,41 @@ class KafkaTest extends AbstractTest {
 	@SpyBean
 	private RestTemplate restTemplate;
 
-	@Test
-	@Description("Publication - Success")
-	void kafkaListenerPublicationSuccessTest() throws ExecutionException, InterruptedException {
-		String topicLow = kafkaTopicCFG.getDispatcherIndexerLowPriorityTopic();
-		String topicMedium = kafkaTopicCFG.getDispatcherIndexerMediumPriorityTopic();
-		String topicHigh = kafkaTopicCFG.getDispatcherIndexerHighPriorityTopic();
+	// @Test
+	// @Description("Publication - Success")
+	// void kafkaListenerPublicationSuccessTest() throws ExecutionException, InterruptedException {
+	// 	String topicLow = kafkaTopicCFG.getDispatcherIndexerLowPriorityTopic();
+	// 	String topicMedium = kafkaTopicCFG.getDispatcherIndexerMediumPriorityTopic();
+	// 	String topicHigh = kafkaTopicCFG.getDispatcherIndexerHighPriorityTopic();
 
-		Map<String, Object> map = new HashMap<>();
-		MessageHeaders headers = new MessageHeaders(map);
+	// 	Map<String, Object> map = new HashMap<>();
+	// 	MessageHeaders headers = new MessageHeaders(map);
 
-		Map<TopicPartition, List<ConsumerRecord<String, String>>> records = new LinkedHashMap<>();
+	// 	Map<TopicPartition, List<ConsumerRecord<String, String>>> records = new LinkedHashMap<>();
 
-		records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
-		records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
-		records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
+	// 	records.put(new TopicPartition(topicLow, 0), new ArrayList<>());
+	// 	records.put(new TopicPartition(topicMedium, 0), new ArrayList<>());
+	// 	records.put(new TopicPartition(topicHigh, 0), new ArrayList<>());
 		
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
+	// 	final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
-		this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicMedium, testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicHigh, testWorkflowInstanceId, kafkaValue);
+	// 	this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
+	// 	this.kafkaInit(topicMedium, testWorkflowInstanceId, kafkaValue);
+	// 	this.kafkaInit(topicHigh, testWorkflowInstanceId, kafkaValue);
 
-		ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
-		ConsumerRecord<String, String> recordMedium = new ConsumerRecord<String,String>(topicMedium, 1, 0, topicMedium, kafkaValue);
-		ConsumerRecord<String, String> recordHigh = new ConsumerRecord<String,String>(topicHigh, 1, 0, topicHigh, kafkaValue);
+	// 	ConsumerRecord<String, String> recordLow = new ConsumerRecord<String,String>(topicLow, 1, 0, topicLow, kafkaValue);
+	// 	ConsumerRecord<String, String> recordMedium = new ConsumerRecord<String,String>(topicMedium, 1, 0, topicMedium, kafkaValue);
+	// 	ConsumerRecord<String, String> recordHigh = new ConsumerRecord<String,String>(topicHigh, 1, 0, topicHigh, kafkaValue);
 
-		IniPublicationResponseDTO responseDTO = new IniPublicationResponseDTO();
-		responseDTO.setEsito(true);
-		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
-				.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
+	// 	IniPublicationResponseDTO responseDTO = new IniPublicationResponseDTO();
+	// 	responseDTO.setEsito(true);
+	// 	doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
+	// 			.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(IniPublicationResponseDTO.class));
 
-		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
-		assertDoesNotThrow(() -> kafkaSRV.mediumPriorityListener(recordMedium, headers));
-		assertDoesNotThrow(() -> kafkaSRV.highPriorityListener(recordHigh, headers));
-	}
+	// 	assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, headers));
+	// 	assertDoesNotThrow(() -> kafkaSRV.mediumPriorityListener(recordMedium, headers));
+	// 	assertDoesNotThrow(() -> kafkaSRV.highPriorityListener(recordHigh, headers));
+	// }
 
 	 
 	@Test
