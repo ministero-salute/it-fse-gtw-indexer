@@ -189,19 +189,19 @@ class KafkaTest extends AbstractTest {
 		assertThrows(NullPointerException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
 	}
 
-	@Test
-	void retryTestWithNotBlockingError() {
-		// Create fake request
-		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
-			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
-			getFakeDeleteRequest()
-		);
-		// Provide mock knowledge
-		doThrow(RestClientException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
-		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
-		// Start
-		assertThrows(RestClientException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
-	}
+	// @Test
+	// void retryTestWithNotBlockingError() {
+	// 	// Create fake request
+	// 	SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+	// 		kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
+	// 		getFakeDeleteRequest()
+	// 	);
+	// 	// Provide mock knowledge
+	// 	doThrow(RestClientException.class).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+	// 	doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+	// 	// Start
+	// 	assertThrows(RestClientException.class, () -> kafkaSRV.retryDeleteListener(req.getKey(), req.getValue()));
+	// }
 
 	@Test
 	void retryTestWithUnknownError() {
