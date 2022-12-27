@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
 
+	@Value("${spring.application.name}")
+	private String msName;
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
@@ -134,6 +137,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					eventDate(new Date()).
 					eventStatus(eventStatus).
 					message(message).
+					microserviceName(msName).
 					build();
 			String json = toJSONJackson(statusManagerMessage);
 			sendMessage(kafkaTopicCFG.getStatusManagerTopic(), workflowInstanceId, json, true);

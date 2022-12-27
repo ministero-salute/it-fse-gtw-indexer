@@ -10,11 +10,6 @@ import lombok.Setter;
 @Setter
 public class IniTraceResponseDTO extends ResponseDTO {
 
-	/**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = 5457503502983726876L;
-
 	private Boolean esito;
 
 	private String errorMessage;

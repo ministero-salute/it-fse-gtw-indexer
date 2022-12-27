@@ -16,11 +16,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper=true)
 public class KafkaStatusManagerDTO extends AbstractDTO {
 
-	/**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = 7080680277816570116L;
-	
 	private EventTypeEnum eventType;
 	
 	private Date eventDate;
@@ -28,5 +23,7 @@ public class KafkaStatusManagerDTO extends AbstractDTO {
 	private EventStatusEnum eventStatus;
 	
 	private String message;
+	
+	private String microserviceName;
 }
  

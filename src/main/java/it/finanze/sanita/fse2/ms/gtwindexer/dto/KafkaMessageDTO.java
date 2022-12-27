@@ -13,11 +13,6 @@ import lombok.Getter;
 public class KafkaMessageDTO extends AbstractDTO {
 
     /**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = -2144344497297675698L;
-
-    /**
      * Message.
      */
     private String message;
