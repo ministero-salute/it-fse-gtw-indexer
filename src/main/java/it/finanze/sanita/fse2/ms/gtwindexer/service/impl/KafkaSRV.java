@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,7 +67,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void lowPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		log.debug("Message priority: {}", PriorityTypeEnum.LOW.getDescription());
+		log.debug(Constants.Logs.MESSAGE_PRIORITY, PriorityTypeEnum.LOW.getDescription());
 		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.LOW.getQueue();
 		genericListener(cr, destTopic);
 	}
@@ -74,7 +75,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void mediumPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		log.debug("Message priority: {}", PriorityTypeEnum.MEDIUM.getDescription());
+		log.debug(Constants.Logs.MESSAGE_PRIORITY, PriorityTypeEnum.MEDIUM.getDescription());
 		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.MEDIUM.getQueue();
 		genericListener(cr, destTopic);
 	}
@@ -82,7 +83,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders) throws InterruptedException {
-		log.debug("Message priority: {}", PriorityTypeEnum.HIGH.getDescription());
+		log.debug(Constants.Logs.MESSAGE_PRIORITY, PriorityTypeEnum.HIGH.getDescription());
 		String destTopic = kafkaTopicCFG.getIndexerPublisherTopic() + PriorityTypeEnum.HIGH.getQueue();
 		genericListener(cr, destTopic);
 	}

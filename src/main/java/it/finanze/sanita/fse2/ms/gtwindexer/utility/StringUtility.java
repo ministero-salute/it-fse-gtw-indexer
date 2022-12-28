@@ -40,18 +40,6 @@ public final class StringUtility {
 	}
 
 	/**
-	 * Transformation from Json to Object.
-	 * 
-	 * @param <T>	Generic type of return
-	 * @param json	json
-	 * @param cls	Object class to return
-	 * @return		object
-	 */
-	public static <T> T fromJSON(final String json, final Class<T> cls) {
-		return new Gson().fromJson(json, cls);
-	}
-
-	/**
 	 * Transformation from Object to Json.
 	 * 
 	 * @param obj	object to transform

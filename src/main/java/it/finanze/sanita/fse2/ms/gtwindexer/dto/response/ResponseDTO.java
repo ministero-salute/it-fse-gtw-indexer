@@ -3,7 +3,6 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.dto.response;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.AbstractDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,7 +11,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class ResponseDTO extends AbstractDTO {
+public class ResponseDTO {
 
 	/**
 	 * Trace id log.

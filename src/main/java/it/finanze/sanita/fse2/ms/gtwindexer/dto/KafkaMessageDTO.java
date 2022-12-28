@@ -10,7 +10,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class KafkaMessageDTO extends AbstractDTO {
+public class KafkaMessageDTO {
 
     /**
      * Message.

@@ -46,4 +46,8 @@ public final class Constants {
 
 	}
 
+    public static final class Logs {
+		private Logs() {}
+		public static final String MESSAGE_PRIORITY = "Message priority: {}";
+    }
 }

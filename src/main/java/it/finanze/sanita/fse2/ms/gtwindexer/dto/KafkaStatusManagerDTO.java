@@ -3,18 +3,16 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.dto;
 
-import java.util.Date;
-
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+
+import java.util.Date;
 
 @Data
 @Builder
-@EqualsAndHashCode(callSuper=true)
-public class KafkaStatusManagerDTO extends AbstractDTO {
+public class KafkaStatusManagerDTO {
 
 	private EventTypeEnum eventType;
 	
