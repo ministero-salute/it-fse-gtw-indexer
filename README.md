@@ -43,14 +43,4 @@ Il microservizio in oggetto ha la responsabilità di richiamare il microservizio
 
 ## License
 
-MIT
-
-**Free Software, Hell Yeah!**
-
-[markdown-it] - Markdown parser done right. Fast and easy to extend.
-
-[//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
-[markdown-it]: <https://github.com/markdown-it/markdown-it>
-[ministero-salute-git-repo-url]: <https://github.com/ministero-salute/it-fse-gtw-indexer.git>
-[Spring Boot]: <https://spring.io/projects/spring-boot>
-[Maven]: <https://maven.apache.org/>
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
