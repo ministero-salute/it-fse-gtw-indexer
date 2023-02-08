@@ -43,6 +43,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IAccreditamentoSimulationSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
@@ -57,6 +58,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	@Autowired
 	private IIniClient iniClient;
+	
+	@Autowired
+	private IAccreditamentoSimulationSRV accreditamentoSRV;
 
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
@@ -163,6 +167,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			try {
 				String key = cr.key();
 				log.debug("Consuming Transaction Event - Message received with key {}", key);
+				
+				accreditamentoSRV.runSimulation(key);
+				
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
 
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
