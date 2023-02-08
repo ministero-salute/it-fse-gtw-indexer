@@ -168,10 +168,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				String key = cr.key();
 				log.debug("Consuming Transaction Event - Message received with key {}", key);
 				
-				accreditamentoSRV.runSimulation(key);
-				
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
-
+				accreditamentoSRV.runSimulation(valueInfo.getIdDoc());
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
 				if (Boolean.TRUE.equals(response.getEsito())) {
