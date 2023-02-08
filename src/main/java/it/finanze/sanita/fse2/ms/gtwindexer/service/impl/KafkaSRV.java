@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.config.AccreditationSimulationCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
+	
+	@Autowired
+	private AccreditationSimulationCFG accreditamentoSimulationCFG;
+	
 
 	@Value("${spring.application.name}")
 	private String msName;
@@ -169,7 +174,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				log.debug("Consuming Transaction Event - Message received with key {}", key);
 				
 				valueInfo = new Gson().fromJson(cr.value(), IndexerValueDTO.class);
-				accreditamentoSRV.runSimulation(valueInfo.getIdDoc());
+				if(accreditamentoSimulationCFG.isEnableCheck()) {
+					accreditamentoSRV.runSimulation(valueInfo.getIdDoc());
+				}
 				IniPublicationResponseDTO response = sendToIniClient(valueInfo, callIni);
 
 				if (Boolean.TRUE.equals(response.getEsito())) {
