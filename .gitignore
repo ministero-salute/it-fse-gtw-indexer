@@ -13,3 +13,4 @@ bin/
 .factorypath
 .metadata
 tmp/
+.idea
