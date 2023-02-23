@@ -1,4 +1,4 @@
-package it.finanze.sanita.fse2.ms.gtwindexer.controller;
+package it.finanze.sanita.fse2.ms.gtwindexer.config.health;
 
 import java.util.Properties;
 
