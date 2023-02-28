@@ -274,7 +274,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					// Get type [BLOCKING or NON_BLOCKING_ERROR]
 					EventStatusEnum status = type.get();
 					// Send to kafka
-					if (delivery < KafkaConsumerCFG.MAX_ATTEMPT) {
+					if (delivery <= KafkaConsumerCFG.MAX_ATTEMPT) {
 						// Send to kafka
 						sendStatusMessage(wif, SEND_TO_INI, status, e.getMessage());
 					}
