@@ -3,32 +3,17 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer;
 
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.EMPTY_JSON;
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.FAILURE_RESPONSE_INI_DTO;
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.SUCCESS_RESPONSE_INI_DTO;
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeDeleteRequest;
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeRetryRequest;
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.testWorkflowInstanceId;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
+import com.google.gson.Gson;
+import it.finanze.sanita.fse2.ms.gtwindexer.client.impl.IniClient;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.jupiter.api.Test;
@@ -42,24 +27,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.messaging.MessageHeaders;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.gson.Gson;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.client.impl.IniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(Constants.Profile.TEST)
@@ -153,7 +133,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertDoesNotThrow(() -> kafkaSRV.retryUpdateListener(key, value));
+		assertDoesNotThrow(() -> kafkaSRV.retryUpdateListener(key, value, 0));
 	}
 
 	@Test
@@ -172,7 +152,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(key, value));
+		assertDoesNotThrow(() -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -190,7 +170,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -207,7 +187,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(BlockingIniException.class,() -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(BlockingIniException.class,() -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -225,7 +205,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(NullPointerException.class, () -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(NullPointerException.class, () -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -244,7 +224,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(ResourceAccessException .class, () -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(ResourceAccessException .class, () -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -263,7 +243,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -281,7 +261,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key, value, 0));
 	}
 
 	@Test
@@ -300,7 +280,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(ResourceAccessException .class, () -> kafkaSRV.retryUpdateListener(key, value));
+		assertThrows(ResourceAccessException .class, () -> kafkaSRV.retryUpdateListener(key, value, 0));
 	}
 
 	@Test
@@ -319,7 +299,7 @@ class KafkaTest extends AbstractTest {
 		MessageHeaders value = req.getValue();
 		assertNotNull(key);
 		assertNotNull(value);
-		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryUpdateListener(key, value));
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryUpdateListener(key, value, 0));
 	}
 
 }

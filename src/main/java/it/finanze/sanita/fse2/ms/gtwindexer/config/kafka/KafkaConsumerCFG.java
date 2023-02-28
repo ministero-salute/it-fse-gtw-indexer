@@ -3,11 +3,7 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +20,16 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Configuration
 public class KafkaConsumerCFG {
+
+	public static final int MAX_ATTEMPT = 5;
 
 	/**
 	 *	Kafka consumer properties.
@@ -82,27 +83,29 @@ public class KafkaConsumerCFG {
 	/**
 	 * Factory with dead letter configuration.
 	 * 
-	 * @param deadLetterKafkaTemplate
+	 * @param dlt
 	 * @return	factory
 	 */
 	@Bean
-	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerDeadLetterContainerFactory(final @Qualifier("notxkafkadeadtemplate") KafkaTemplate<Object, Object> deadLetterKafkaTemplate) {
+	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerDeadLetterContainerFactory(final @Qualifier("notxkafkadeadtemplate") KafkaTemplate<Object, Object> dlt) {
 
 		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
+		factory.getContainerProperties().setDeliveryAttemptHeader(true);
 		
 		// Definizione nome topic deadLetter
 		log.debug("TOPIC: " + kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic());
-		DeadLetterPublishingRecoverer dlpr = new DeadLetterPublishingRecoverer(deadLetterKafkaTemplate, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
-		
+		DeadLetterPublishingRecoverer dlpr = new DeadLetterPublishingRecoverer(
+			dlt, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
+
 		// Set classificazione errori da gestire per la deadLetter.
-		DefaultErrorHandler sceh = new DefaultErrorHandler(dlpr, new FixedBackOff(FixedBackOff.DEFAULT_INTERVAL, FixedBackOff.UNLIMITED_ATTEMPTS));
-		
+		DefaultErrorHandler policy = new DefaultErrorHandler(dlpr, new FixedBackOff());
+
 		log.debug("setClassification - kafkaListenerDeadLetterContainerFactory: ");
-		setClassification(sceh);
-		
+		setClassification(policy);
+
 		// da eliminare se non si volesse gestire la dead letter
-		factory.setCommonErrorHandler(sceh); 
+		factory.setCommonErrorHandler(policy);
 
 		return factory;
 	}
