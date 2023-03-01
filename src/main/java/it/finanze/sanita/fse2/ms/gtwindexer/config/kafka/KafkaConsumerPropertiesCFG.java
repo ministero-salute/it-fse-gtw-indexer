@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -20,6 +21,7 @@ import lombok.Data;
  */
 @Data
 @Component
+@Slf4j
 public class KafkaConsumerPropertiesCFG implements Serializable {
 
 	/**
@@ -132,7 +134,8 @@ public class KafkaConsumerPropertiesCFG implements Serializable {
 	public Optional<EventStatusEnum> asExceptionType(Exception e) {
 		// Retrieve exception identifier
 		EventStatusEnum status = null;
-		String identifier = ExceptionUtils.getRootCause(e).getClass().getCanonicalName();
+
+		String identifier = e.getClass().getCanonicalName();
 		// Identify
 		if(deadLetterExceptions.contains(identifier)) status = EventStatusEnum.BLOCKING_ERROR;
 		if(temporaryExceptions.contains(identifier)) status = EventStatusEnum.NON_BLOCKING_ERROR;
@@ -140,4 +143,27 @@ public class KafkaConsumerPropertiesCFG implements Serializable {
 		return Optional.ofNullable(status);
 	}
 
+	public void deadLetterHelper(Exception e) {
+		StringBuilder sb = new StringBuilder("LIST OF USEFUL EXCEPTIONS TO MOVE TO DEADLETTER OFFSET 'kafka.consumer.dead-letter-exc'. ");
+		boolean continua = true;
+		Throwable excTmp = e;
+		Throwable excNext = null;
+
+		while (continua) {
+			if (excNext != null) {
+				excTmp = excNext;
+				sb.append(", ");
+			}
+
+			sb.append(excTmp.getClass().getCanonicalName());
+			excNext = excTmp.getCause();
+
+			if (excNext == null) {
+				continua = false;
+			}
+
+		}
+
+		log.error("{}", sb);
+	}
 }

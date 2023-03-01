@@ -18,7 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.CurrentApplicationLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ErrorLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
@@ -41,7 +41,7 @@ class StringUtilityTest {
     
     @Test
     void toJSONTest() {
-    	IniPublicationResponseDTO obj = new IniPublicationResponseDTO();
+    	IniTraceResponseDTO obj = new IniTraceResponseDTO();
     	obj.setErrorMessage(null);
     	obj.setEsito(null);
     	

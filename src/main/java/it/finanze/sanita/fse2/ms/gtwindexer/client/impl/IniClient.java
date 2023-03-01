@@ -20,7 +20,6 @@ import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.MicroservicesURLCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
@@ -42,14 +41,14 @@ public class IniClient implements IIniClient {
 
 	
 	@Override
-	public IniPublicationResponseDTO sendPublicationData(final String workflowInstanceId) {
+	public IniTraceResponseDTO sendPublicationData(final String workflowInstanceId) {
 		log.debug("INI Client - Sending publication data to INI");
 
 		HttpEntity<?> entity = buildHeader(workflowInstanceId);
-		IniPublicationResponseDTO response = new IniPublicationResponseDTO();
+		IniTraceResponseDTO response = new IniTraceResponseDTO();
 		try {
 			final String endpoint = msUrlCFG.getIniClientHost() + "/v1/ini-publish";
-			response = restTemplate.postForObject(endpoint, entity, IniPublicationResponseDTO.class);
+			response = restTemplate.postForObject(endpoint, entity, IniTraceResponseDTO.class);
 		} catch (ResourceAccessException rax) {
 			log.error("Connect error while call ini client send publication :" + rax);
 			throw rax;
@@ -61,16 +60,16 @@ public class IniClient implements IIniClient {
 	}
 
 	@Override
-	public IniPublicationResponseDTO sendReplaceData(final String workflowInstanceId) {
+	public IniTraceResponseDTO sendReplaceData(final String workflowInstanceId) {
 		log.debug("INI Client - Sending update data to INI to update document with wii: {}", workflowInstanceId);
-		IniPublicationResponseDTO out = new IniPublicationResponseDTO();
+		IniTraceResponseDTO out = new IniTraceResponseDTO();
 
 		HttpEntity<?> entity = buildHeader(workflowInstanceId);
 
-		ResponseEntity<IniPublicationResponseDTO> response = null;
+		ResponseEntity<IniTraceResponseDTO> response = null;
 		try {
 			final String endpoint = msUrlCFG.getIniClientHost() + "/v1/ini-replace";
-			response = restTemplate.exchange(endpoint, HttpMethod.PUT, entity, IniPublicationResponseDTO.class);
+			response = restTemplate.exchange(endpoint, HttpMethod.PUT, entity, IniTraceResponseDTO.class);
 			out = response.getBody();
 		} catch (ResourceAccessException rax) {
 			log.error("Connection error while calling ini client send replace:", rax);

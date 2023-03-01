@@ -5,7 +5,6 @@ package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniPublicationResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 
 /**
@@ -19,7 +18,7 @@ public interface IIniClient {
      * @param workflowInstanceId Identifier of workflow instance that consents to retrieve data of creation.
      * @return Outcome of service call.
      */
-    IniPublicationResponseDTO sendPublicationData(String workflowInstanceId);
+	IniTraceResponseDTO sendPublicationData(String workflowInstanceId);
 
     /**
      * Executes the call to ini-client for update purpose.
@@ -27,7 +26,7 @@ public interface IIniClient {
      * @param updateInfo Information of document to update.
      * @return Outcome of service call.
      */
-    IniPublicationResponseDTO sendReplaceData(String workflowInstanceId);
+	IniTraceResponseDTO sendReplaceData(String workflowInstanceId);
 
     /**
      * Execute the call to ini-client for deletion purpose

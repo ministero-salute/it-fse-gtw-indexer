@@ -152,4 +152,5 @@ public class KafkaConsumerCFG {
 		factory.setConsumerFactory(consumerFactory());
 		return factory;
 	}
+	
 }

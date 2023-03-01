@@ -7,7 +7,9 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.handler.annotation.Header;
  
 
 public interface IKafkaSRV {
@@ -28,7 +30,7 @@ public interface IKafkaSRV {
 	 * @param messageHeaders
 	 * @throws InterruptedException
 	 */
-    void lowPriorityListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws InterruptedException;
+	void lowPriorityListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception;
 
 	/**
 	 * Kafka med priority listener
@@ -36,7 +38,7 @@ public interface IKafkaSRV {
 	 * @param messageHeaders
 	 * @throws InterruptedException
 	 */
-	void mediumPriorityListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws InterruptedException;
+	void mediumPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception;
 
 	/**
 	 * Kafka high priority listener
@@ -44,8 +46,8 @@ public interface IKafkaSRV {
 	 * @param messageHeaders
 	 * @throws InterruptedException
 	 */
-	void highPriorityListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders) throws InterruptedException;
-
+	void highPriorityListener(final ConsumerRecord<String, String> cr, final MessageHeaders messageHeaders, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception;
+	
 	void sendStatusMessage(String workflowInstanceId, EventTypeEnum eventType, EventStatusEnum eventStatus, String exception);
 
 	void retryDeleteListener(ConsumerRecord<String, String> cr, MessageHeaders messageHeaders, int delivery) throws Exception;
