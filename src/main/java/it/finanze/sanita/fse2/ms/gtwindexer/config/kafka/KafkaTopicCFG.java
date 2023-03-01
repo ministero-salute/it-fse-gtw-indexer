@@ -4,6 +4,7 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,4 +87,7 @@ public class KafkaTopicCFG {
 		}
 	}
 
+	public String getIndexerPublisherTopic(PriorityTypeEnum priority) {
+		return indexerPublisherTopic + priority.getQueue();
+	}
 }

@@ -33,10 +33,10 @@ public abstract class KafkaAbstractSRV {
 	protected KafkaTemplate<String, String> notxKafkaTemplate;
 
 	@Autowired
-	protected KafkaTopicCFG kafkaTopicCFG;
+	protected KafkaTopicCFG topics;
 
 	public RecordMetadata sendMessage(String topic, String key, String value, boolean trans) {
-		RecordMetadata out = null;
+		RecordMetadata out;
 		ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, key, value);
 		try {
 			out = kafkaSend(producerRecord, trans);
@@ -47,10 +47,9 @@ public abstract class KafkaAbstractSRV {
 		return out;
 	}
 
-	@SuppressWarnings("unchecked")
 	protected RecordMetadata kafkaSend(ProducerRecord<String, String> producerRecord, boolean trans) {
 		RecordMetadata out = null;
-		Object result = null;
+		SendResult<String, String> result = null;
 
 		if (trans) {
 			result = txKafkaTemplate.executeInTransaction(t -> {
@@ -69,8 +68,7 @@ public abstract class KafkaAbstractSRV {
 		}
 
 		if (result != null) {
-			SendResult<String, String> sendResult = (SendResult<String, String>) result;
-			out = sendResult.getRecordMetadata();
+			out = result.getRecordMetadata();
 			log.debug("Kafka message sent successfully.");
 		}
 
