@@ -160,7 +160,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		String request = cr.value();
 		T req;
 		boolean exit = false;
-		// Convert to delete request
+		// Convert request
 		try {
 			// Get object
 			req = new Gson().fromJson(request, clazz);
