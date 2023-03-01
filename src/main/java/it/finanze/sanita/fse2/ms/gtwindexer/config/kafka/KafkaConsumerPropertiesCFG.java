@@ -3,15 +3,13 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,12 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Component
 @Slf4j
-public class KafkaConsumerPropertiesCFG implements Serializable {
-
-	/**
-	 * Serial version uid.
-	 */
-	private static final long serialVersionUID = 4863316988401046567L;
+public class KafkaConsumerPropertiesCFG {
 
 	/**
 	 * Client id.
