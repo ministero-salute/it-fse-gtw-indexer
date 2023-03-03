@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static it.finanze.sanita.fse2.ms.gtwindexer.config.Constants.Logs.MESSAGE_PRIORITY;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
@@ -66,35 +67,35 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void lowPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.debug(MESSAGE_PRIORITY, LOW.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(LOW), new Date(), req) , delivery);
+		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(LOW), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void mediumPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.debug(MESSAGE_PRIORITY, MEDIUM.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(MEDIUM), new Date(), req) , delivery);
+		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(MEDIUM), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void highPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.debug(MESSAGE_PRIORITY, HIGH.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(HIGH), new Date(), req) , delivery);
+		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(HIGH), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.delete-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-delete}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryDeleteListener(ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.debug("Retry delete listener");
-		loop(cr, IniDeleteRequestDTO.class, req -> iniClient.delete(req), delivery);
+		loop(cr, IniDeleteRequestDTO.class, req -> iniClient.delete(req), delivery, null);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.update-retry-topic}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.retry-update}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void retryUpdateListener(ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.debug("Retry update listener");
-		loop(cr, IniMetadataUpdateReqDTO.class, req -> iniClient.sendUpdateData(req), delivery);
+		loop(cr, IniMetadataUpdateReqDTO.class, req -> iniClient.sendUpdateData(req), delivery, null);
 	}
 
 
@@ -150,7 +151,13 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	}
 
 
-	private <T> void loop(ConsumerRecord<String, String> cr, Class<T> clazz, ClientCallback<T, IniTraceResponseDTO> cb, int delivery) throws Exception {
+	private <T> void loop(
+		ConsumerRecord<String, String> cr,
+		Class<T> clazz,
+		ClientCallback<T, IniTraceResponseDTO> cb,
+		int delivery,
+		Function<T, String> extractor
+	) throws Exception {
 
 		// ====================
 		// Deserialize request
@@ -166,6 +173,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			req = new Gson().fromJson(request, clazz);
 			// Require not null
 			Objects.requireNonNull(req, "The request payload cannot be null");
+			// Extract wif if provided
+			if (extractor != null) {
+				wif = extractor.apply(req);
+			}
 		} catch (Exception e) {
 			log.error("Unable to deserialize request with wif {} due to: {}", wif, e.getMessage());
 			sendStatusMessage(wif, DESERIALIZE, BLOCKING_ERROR, request);
