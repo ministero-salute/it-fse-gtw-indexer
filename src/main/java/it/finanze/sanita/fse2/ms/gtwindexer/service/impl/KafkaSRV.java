@@ -111,7 +111,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 					microserviceName(msName).
 					build();
 			String json = toJSONJackson(statusManagerMessage);
-			sendMessage(topics.getStatusManagerTopic(), workflowInstanceId, json, true);
+			sendMessage(topics.getStatusManagerTopic(), workflowInstanceId, json);
 		} catch(Exception ex) {
 			log.error("Error while send status message on indexer : " , ex);
 			throw new BusinessException(ex);
@@ -127,7 +127,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		if (Boolean.TRUE.equals(response.getEsito())) {
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
-				sendMessage(destTopic, cr.key(), cr.value(), true);
+				sendMessage(destTopic, cr.key(), cr.value());
 			}catch(Exception ex) {
 				throw new BlockingIniException(ex);
 			}

@@ -11,8 +11,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaProducerPropertiesCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -35,11 +37,14 @@ public abstract class KafkaAbstractSRV {
 	@Autowired
 	protected KafkaTopicCFG topics;
 
-	public RecordMetadata sendMessage(String topic, String key, String value, boolean trans) {
+	@Autowired
+	private KafkaProducerPropertiesCFG kafkaProducerCFG;
+	
+	public RecordMetadata sendMessage(String topic, String key, String value) {
 		RecordMetadata out;
 		ProducerRecord<String, String> producerRecord = new ProducerRecord<>(topic, key, value);
 		try {
-			out = kafkaSend(producerRecord, trans);
+			out = kafkaSend(producerRecord);
 		} catch (Exception e) {
 			log.error("Send failed.", e);
 			throw new BusinessException(e);
@@ -47,10 +52,11 @@ public abstract class KafkaAbstractSRV {
 		return out;
 	}
 
-	protected RecordMetadata kafkaSend(ProducerRecord<String, String> producerRecord, boolean trans) {
+	protected RecordMetadata kafkaSend(ProducerRecord<String, String> producerRecord) {
 		RecordMetadata out = null;
 		SendResult<String, String> result = null;
 
+		boolean trans = !StringUtility.isNullOrEmpty(kafkaProducerCFG.getTransactionalId()); 
 		if (trans) {
 			result = txKafkaTemplate.executeInTransaction(t -> {
 				try {
