@@ -20,6 +20,8 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +50,7 @@ public class KafkaConsumerCFG {
 	@Bean
 	public Map<String, Object> consumerConfigs() {
 		Map<String, Object> props = new HashMap<>();
-		
+
 		props.put(ConsumerConfig.CLIENT_ID_CONFIG, kafkaConsumerPropCFG.getClientId());
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConsumerPropCFG.getConsumerBootstrapServers());
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaConsumerPropCFG.getConsumerGroupId());
@@ -57,13 +59,25 @@ public class KafkaConsumerCFG {
 		props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, kafkaConsumerPropCFG.getIsolationLevel());
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, kafkaConsumerPropCFG.getAutoCommit());
 		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaConsumerPropCFG.getAutoOffsetReset());
-		
-		//SSL
-		if (kafkaConsumerPropCFG.isEnableSsl()) { 
+
+
+		if(!StringUtility.isNullOrEmpty(kafkaConsumerPropCFG.getProtocol())) {
 			props.put("security.protocol", kafkaConsumerPropCFG.getProtocol());
+		}
+
+		if(!StringUtility.isNullOrEmpty(kafkaConsumerPropCFG.getMechanism())) {
 			props.put("sasl.mechanism", kafkaConsumerPropCFG.getMechanism());
+		}
+
+		if(!StringUtility.isNullOrEmpty(kafkaConsumerPropCFG.getConfigJaas())) {
 			props.put("sasl.jaas.config", kafkaConsumerPropCFG.getConfigJaas());
+		}
+
+		if(!StringUtility.isNullOrEmpty(kafkaConsumerPropCFG.getTrustoreLocation())) {
 			props.put("ssl.truststore.location", kafkaConsumerPropCFG.getTrustoreLocation());
+		}
+
+		if(!StringUtility.isNullOrEmpty(String.valueOf(kafkaConsumerPropCFG.getTrustorePassword()))) {
 			props.put("ssl.truststore.password", String.valueOf(kafkaConsumerPropCFG.getTrustorePassword()));
 		}
 		return props;
@@ -92,11 +106,11 @@ public class KafkaConsumerCFG {
 		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
 		factory.getContainerProperties().setDeliveryAttemptHeader(true);
-		
+
 		// Definizione nome topic deadLetter
 		log.debug("TOPIC: " + kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic());
 		DeadLetterPublishingRecoverer dlpr = new DeadLetterPublishingRecoverer(
-			dlt, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
+				dlt, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
 
 		// Set classificazione errori da gestire per la deadLetter.
 		DefaultErrorHandler policy = new DefaultErrorHandler(dlpr, new FixedBackOff());
@@ -109,7 +123,7 @@ public class KafkaConsumerCFG {
 
 		return factory;
 	}
-	
+
 	private void setClassification(final DefaultErrorHandler sceh) {
 		List<Class<? extends Exception>> out = getExceptionsConfig();
 
@@ -136,10 +150,10 @@ public class KafkaConsumerCFG {
 			log.error("Error retrieving the exception with fully qualified name: <{}>", temp);
 			log.error("Error : ", e);
 		}
-		
+
 		return out;
 	}
-	
+
 	/**
 	 * Default Container factory.
 	 * 
@@ -152,5 +166,5 @@ public class KafkaConsumerCFG {
 		factory.setConsumerFactory(consumerFactory());
 		return factory;
 	}
-	
+
 }

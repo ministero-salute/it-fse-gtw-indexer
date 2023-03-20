@@ -107,12 +107,6 @@ public class KafkaConsumerPropertiesCFG {
 	private transient char[] trustorePassword;
 
 	/**
-	 * Flag enable ssl.
-	 */
-	@Value("${kafka.enablessl}")
-	private boolean enableSsl;
-	
-	/**
 	 * Kafka retry.
 	 */
 	@Value("${kafka.retry}")

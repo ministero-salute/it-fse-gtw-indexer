@@ -3,26 +3,18 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
-import java.io.Serializable;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
 
 /**
- *
  *	Kafka properties configuration.
  */
 @Data
 @Component
-public class KafkaPropertiesCFG implements Serializable {
+public class KafkaPropertiesCFG {
   
-	/**
-	 *  Serial version uid
-	 */
-	private static final long serialVersionUID = -7936473659737067416L;
-
 	/**
 	 *  Boostrap server.
 	 */
@@ -60,10 +52,5 @@ public class KafkaPropertiesCFG implements Serializable {
 	@Value("${kafka.properties.ssl.truststore.password}")
 	private transient char[] trustorePassword;
 	 
-	/**
-	 * Enable Ssl flag.
-	 */
-	@Value("${kafka.enablessl}")
-	private boolean enableSSL;
 	
 }
