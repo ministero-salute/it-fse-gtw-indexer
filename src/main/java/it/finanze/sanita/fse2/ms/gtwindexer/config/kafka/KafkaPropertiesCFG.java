@@ -3,9 +3,16 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
+import java.util.Properties;
+
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import lombok.Data;
 
 /**
@@ -52,5 +59,20 @@ public class KafkaPropertiesCFG {
 	@Value("${kafka.properties.ssl.truststore.password}")
 	private transient char[] trustorePassword;
 	 
-	
+	@Autowired
+	private ProfileUtility profileUtility;
+
+	@Bean
+	public AdminClient client() {
+		Properties configProperties = new Properties();
+    	configProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, producerBootstrapServers);
+    	if(!profileUtility.isDevOrDockerProfile() && !profileUtility.isTestProfile()) {
+    		configProperties.put("security.protocol", protocol);
+    		configProperties.put("sasl.mechanism", mechanism);
+    		configProperties.put("sasl.jaas.config", configJaas);
+    		configProperties.put("ssl.truststore.location", trustoreLocation);  
+    		configProperties.put("ssl.truststore.password", String.valueOf(trustorePassword)); 
+		}
+		return AdminClient.create(configProperties);
+	}
 }
