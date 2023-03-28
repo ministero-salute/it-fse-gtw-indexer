@@ -12,15 +12,20 @@ public class KafkaHealthIndicator implements HealthIndicator {
 	@Autowired
     private AdminClient client;
 	
-    @Override
-    public Health health() {
-        Health health = null;
-        try {
-            client.listTopics().listings().get();
-            health = Health.up().build();
-        } catch (Exception e) {
-            health = Health.down(e).build();
-        }
-        return health;
-    }
+	@Override
+	public Health health() {
+		Health health = null;
+		try {
+			client.listTopics().listings().get();
+			health = Health.up().build();
+		} catch (InterruptedException e) {
+			log.warn("Interrupted!", e);
+			health = Health.down(e).build();
+			// Restore interrupted state...
+			Thread.currentThread().interrupt();
+		} catch (Exception e) {
+			health = Health.down(e).build();
+		}
+		return health;
+	}
 }
