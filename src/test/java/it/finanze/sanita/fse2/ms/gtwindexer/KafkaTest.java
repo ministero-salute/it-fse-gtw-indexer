@@ -214,7 +214,7 @@ class KafkaTest extends AbstractTest {
 				getFakeDeleteRequest()
 		);
 		// Provide mock knowledge
-		doThrow(HttpClientErrorException.class).when(restTemplate)
+		doThrow(HttpClientErrorException.create(HttpStatus.INTERNAL_SERVER_ERROR, EMPTY_JSON, null, null, null)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.DELETE), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 		// Start
@@ -264,7 +264,7 @@ class KafkaTest extends AbstractTest {
 				"{\"key\":\"value\"}"
 		);
 		// Provide mock knowledge
-		doThrow(HttpClientErrorException.class).when(restTemplate)
+		doThrow(HttpClientErrorException.create(HttpStatus.INTERNAL_SERVER_ERROR, EMPTY_JSON, null, null, null)).when(restTemplate)
 				.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 		// Start
