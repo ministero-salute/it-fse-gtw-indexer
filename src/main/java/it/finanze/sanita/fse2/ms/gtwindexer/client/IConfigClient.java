@@ -9,24 +9,9 @@
  * 
  * You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package it.finanze.sanita.fse2.ms.gtwindexer.config;
+package it.finanze.sanita.fse2.ms.gtwindexer.client;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+public interface IConfigClient {
 
-import lombok.Getter;
-
-/**
- *  Microservices URL.
- */
-@Configuration
-@Getter
-public class MicroservicesURLCFG {
-
-	/**
-	 * Config gtw host.
-	 */
-	@Value("${ms.url.gtw-config}")
-	private String configHost;
-
+	String getEDSStrategy();
 }
