@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IConfigClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.MicroservicesURLCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EdsStrategyEnum;
 
 @Component
 public class ConfigClient implements IConfigClient {
@@ -28,17 +29,7 @@ public class ConfigClient implements IConfigClient {
     @Autowired
     private MicroservicesURLCFG msUrlCFG;
 
-    @Override
-    public String getEDSStrategy() {
-    	String output = ""; //TODO - Set with default strategy
-    	
-    	if(isReachable()) {
-    		String endpoint = msUrlCFG.getConfigHost() + "/v1/config-items/props?type=GENERIC&props=eds-strategy";
-    		output = restTemplate.getForObject(endpoint,String.class);
-    	}
-        return output;
-    }
- 
+  
     private boolean isReachable() {
         try {
             final String endpoint = msUrlCFG.getConfigHost() + "/status";
@@ -48,4 +39,15 @@ public class ConfigClient implements IConfigClient {
             return false;
         }
     }
+    
+    @Override
+    public String getEDSStrategy() {
+        String output = EdsStrategyEnum.NO_EDS.name(); 
+        if(isReachable()) {
+            String endpoint = msUrlCFG.getConfigHost() + "/v1/config-items/props?type=GENERIC&props=eds-strategy";
+            output = restTemplate.getForObject(endpoint,String.class);
+        }
+        return output;
+    }
+
 }

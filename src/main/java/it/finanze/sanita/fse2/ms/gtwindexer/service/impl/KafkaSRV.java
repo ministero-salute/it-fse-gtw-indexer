@@ -11,7 +11,32 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
+import static it.finanze.sanita.fse2.ms.gtwindexer.config.Constants.Logs.MESSAGE_PRIORITY;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR_MAX_RETRY;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.HIGH;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.LOW;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.MEDIUM;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
+
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.stereotype.Service;
+
 import com.google.gson.Gson;
+
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.client.base.ClientCallback;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.AccreditationSimulationCFG;
@@ -22,32 +47,17 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.OperationLogEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IAccreditamentoSimulationSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.KafkaHeaders;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.stereotype.Service;
-
-import java.util.Date;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-
-import static it.finanze.sanita.fse2.ms.gtwindexer.config.Constants.Logs.MESSAGE_PRIORITY;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.*;
-import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
 
 /**
  * Kafka management service.
@@ -70,6 +80,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	@Value("${spring.application.name}")
 	private String msName;
+	 
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
@@ -132,16 +143,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
-		if (Boolean.TRUE.equals(response.getEsito())) {
-			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
-			try {
-				sendMessage(destTopic, cr.key(), cr.value());
-			}catch(Exception ex) {
-				throw new BlockingIniException(ex);
-			}
-		} else {
+		if (!Boolean.TRUE.equals(response.getEsito())) {
+			log.error("Error sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: false", OperationLogEnum.CALL_INI, ResultLogEnum.KO, startDateOperation);
 			throw new BlockingIniException(response.getErrorMessage());
-		}
+		}  
 		return response;
 	}
 
