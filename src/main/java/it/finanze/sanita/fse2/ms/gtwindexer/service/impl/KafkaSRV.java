@@ -26,6 +26,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IAccreditamentoSimulationSRV;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 
 	@Value("${spring.application.name}")
 	private String msName;
+	
+	@Autowired
+	private IConfigSRV configSRV;
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
@@ -132,7 +136,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
-		if (Boolean.TRUE.equals(response.getEsito())) {
+		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds()) { 
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
 				sendMessage(destTopic, cr.key(), cr.value());
