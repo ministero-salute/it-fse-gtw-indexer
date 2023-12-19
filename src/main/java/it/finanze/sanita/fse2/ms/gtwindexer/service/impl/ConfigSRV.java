@@ -54,7 +54,7 @@ public class ConfigSRV implements IConfigSRV {
 	public Boolean isRemoveEds() {
 		long lastUpdate = props.get(PROPS_NAME_REMOVE_EDS_ENABLE).getKey();
 		if (new Date().getTime() - lastUpdate >= DELTA_MS) {
-			synchronized(PROPS_NAME_REMOVE_EDS_ENABLE) {
+			synchronized(Locks.REMOVE_METADATA_ENABLE) {
 				if (new Date().getTime() - lastUpdate >= DELTA_MS) {
 					refresh(PROPS_NAME_REMOVE_EDS_ENABLE);
 				}
@@ -95,6 +95,8 @@ public class ConfigSRV implements IConfigSRV {
 		integrity();
 	}
 
-	 
+	private static final class Locks {
+		public static final Object REMOVE_METADATA_ENABLE = new Object();
+	}
 
 }
