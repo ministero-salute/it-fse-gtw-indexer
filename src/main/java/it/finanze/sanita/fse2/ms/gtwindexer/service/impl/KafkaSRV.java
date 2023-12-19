@@ -48,7 +48,9 @@ import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.*;
+import static it.finanze.sanita.fse2.ms.gtwindexer.utility.KafkaUtility.getTraceContext;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Kafka management service.
@@ -145,7 +147,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			}
 		} else {
 			throw new BlockingIniException(response.getErrorMessage());
-		}
+		}  
 		return response;
 	}
 
@@ -170,6 +172,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		int delivery,
 		Function<T, String> extractor
 	) throws Exception {
+
+		getTraceContext(cr).ifPresent(hd -> log.info("Logging transaction with context {}", new String(hd.value(), UTF_8)));
 
 		// ====================
 		// Deserialize request

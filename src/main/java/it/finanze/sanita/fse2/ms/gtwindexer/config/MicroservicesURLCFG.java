@@ -23,10 +23,17 @@ import lombok.Getter;
 @Getter
 public class MicroservicesURLCFG {
 
+
     /** 
      *  Validator host.
      */
 	@Value("${ms.url.gtw-ini-client-service}")
 	private String iniClientHost;
+	
+	/**
+	 * Config gtw host.
+	 */
+	@Value("${ms.url.gtw-config}")
+	private String configHost;
 
 }
