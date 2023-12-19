@@ -20,11 +20,13 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Description;
 import org.springframework.http.HttpEntity;
@@ -63,6 +65,9 @@ class KafkaTest extends AbstractTest {
 	@SpyBean
 	private RestTemplate restTemplate;
 
+	@MockBean
+	private IConfigSRV config;
+
 	@Test
 	@Description("Publication - Success")
 	void kafkaListenerPublicationSuccessTest() throws ExecutionException, InterruptedException {
@@ -85,6 +90,7 @@ class KafkaTest extends AbstractTest {
 		doReturn(responseDTO).when(restTemplate)
 				.postForObject(anyString(), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 
+		when(config.isRemoveEds()).thenReturn(false);
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow,0));
 		assertDoesNotThrow(() -> kafkaSRV.mediumPriorityListener(recordMedium,0));
 		assertDoesNotThrow(() -> kafkaSRV.highPriorityListener(recordHigh,0));
@@ -105,6 +111,7 @@ class KafkaTest extends AbstractTest {
 		doReturn(new ResponseEntity<>(responseDTO, HttpStatus.OK)).when(restTemplate)
 						.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 
+		when(config.isRemoveEds()).thenReturn(false);
 		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, 0));
 	}
 
