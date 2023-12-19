@@ -33,7 +33,7 @@ public final class ClientRoutes {
         public static final String QP_TYPE = "type";
         public static final String QP_PROPS = "props";
         // VALUES
-        public static final String PROPS_NAME_REMOVE_EDS_ENABLE = "remove-eds-enable";
+        public static final String PROPS_NAME_REMOVE_EDS_ENABLE = "remove-eds-enabled";
 
     }
 
