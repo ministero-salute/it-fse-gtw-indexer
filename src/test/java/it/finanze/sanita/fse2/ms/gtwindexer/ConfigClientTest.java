@@ -90,7 +90,7 @@ class ConfigClientTest {
         ConfigItemDTO.ConfigDataItemDTO dataItem = new ConfigItemDTO.ConfigDataItemDTO();
         ConfigItemDTO expected = new ConfigItemDTO();
         // Valorizzo le props di tipo FHIR-MAPPING-ENGINE
-        Map<String, String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<String, String>();
         map.put("cfg-items-retention-day", "true");
         dataItem.setKey(GENERIC.name());
         dataItem.setItems(map);
