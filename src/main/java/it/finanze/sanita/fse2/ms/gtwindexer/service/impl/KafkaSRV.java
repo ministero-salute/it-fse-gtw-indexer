@@ -146,7 +146,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				throw new BlockingIniException(ex);
 			}
 		} else {
-			throw new BlockingIniException(response.getErrorMessage());
+			throw new BlockingIniException(response.getMessage());
 		}  
 		return response;
 	}
@@ -165,13 +165,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	}
 
 
-	private <T> void loop(
-		ConsumerRecord<String, String> cr,
-		Class<T> clazz,
-		ClientCallback<T, IniTraceResponseDTO> cb,
-		int delivery,
-		Function<T, String> extractor
-	) throws Exception {
+	private <T> void loop(ConsumerRecord<String, String> cr,Class<T> clazz,ClientCallback<T, IniTraceResponseDTO> cb,int delivery,Function<T, String> extractor) throws Exception {
 
 		getTraceContext(cr).ifPresent(hd -> log.info("Logging transaction with context {}", new String(hd.value(), UTF_8)));
 
@@ -210,9 +204,9 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				IniTraceResponseDTO res = cb.request(req);
 				// Everything has been resolved
 				if (Boolean.TRUE.equals(res.getEsito())) {
-					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, new Gson().toJson(res));
+					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, res.getMessage());
 				} else {
-					throw new BlockingIniException(res.getErrorMessage());
+					throw new BlockingIniException(res.getMessage());
 				}
 				// Quit flag
 				exit = true;
