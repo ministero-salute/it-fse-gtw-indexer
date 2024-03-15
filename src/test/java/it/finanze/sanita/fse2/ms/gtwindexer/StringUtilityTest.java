@@ -50,7 +50,7 @@ class StringUtilityTest {
     @Test
     void toJSONTest() {
     	IniTraceResponseDTO obj = new IniTraceResponseDTO();
-    	obj.setErrorMessage(null);
+    	obj.setMessage(null);
     	obj.setEsito(null);
     	
         Assertions.assertDoesNotThrow(() -> StringUtility.toJSON(obj));
