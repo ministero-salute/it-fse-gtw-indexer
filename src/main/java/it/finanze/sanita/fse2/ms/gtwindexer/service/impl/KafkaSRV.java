@@ -145,7 +145,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			}catch(Exception ex) {
 				throw new BlockingIniException(ex);
 			}
-		} else {
+		} else if (Boolean.FALSE.equals(response.getEsito())) {
 			throw new BlockingIniException(response.getMessage());
 		}  
 		return response;
