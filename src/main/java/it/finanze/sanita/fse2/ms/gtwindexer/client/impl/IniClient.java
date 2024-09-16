@@ -133,6 +133,7 @@ public class IniClient implements IIniClient {
 	}
 
 	private void errorHandler(final HttpStatusCodeException ex) {
+		log.error("Error while call ini client:",ex);
 		if (HttpStatus.NOT_FOUND.equals(ex.getStatusCode())) {
 			throw new NoRecordFoundException(ex.getMessage(), ex);
 		} else if (HttpStatus.INTERNAL_SERVER_ERROR.equals(ex.getStatusCode())) {

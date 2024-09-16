@@ -80,22 +80,31 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void lowPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		log.debug(MESSAGE_PRIORITY, LOW.getDescription());
+		long startTime = System.currentTimeMillis();
+		log.info(MESSAGE_PRIORITY, LOW.getDescription());
 		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(LOW), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
+		long endTime = startTime - System.currentTimeMillis();
+		log.info("TIME TO PROCESS:" + endTime);		
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void mediumPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		log.debug(MESSAGE_PRIORITY, MEDIUM.getDescription());
+		long startTime = System.currentTimeMillis();
+		log.info(MESSAGE_PRIORITY, MEDIUM.getDescription());
 		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(MEDIUM), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
+		long endTime = startTime - System.currentTimeMillis();
+		log.info("TIME TO PROCESS:" + endTime);
 	}
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id}'}")
 	public void highPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		log.debug(MESSAGE_PRIORITY, HIGH.getDescription());
+		long startTime = System.currentTimeMillis();
+		log.info(MESSAGE_PRIORITY, HIGH.getDescription());
 		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(HIGH), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
+		long endTime = startTime - System.currentTimeMillis();
+		log.info("TIME TO PROCESS:" + endTime);
 	}
 
 	@Override
