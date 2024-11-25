@@ -12,6 +12,7 @@ import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.client.routes.IConfigClient;
@@ -31,6 +32,9 @@ public class ConfigSRV implements IConfigSRV {
 
 	@Autowired
 	private ProfileUtility profiles;
+
+    @Value("${ms.config.refresh-rate}")
+	private Long refreshRate;
 
 	private final Map<String, Pair<Long, String>> props;
 
@@ -95,7 +99,7 @@ public class ConfigSRV implements IConfigSRV {
 
 	@Override
 	public long getRefreshRate() {
-		return 300_000L;
+		return this.refreshRate;
 	}
 
 	private static final class Locks {
