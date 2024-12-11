@@ -26,6 +26,7 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.oauth2.CustomAuthenticateCallbackHandler;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 
@@ -84,9 +85,17 @@ public class KafkaProducerCFG {
 			props.put("ssl.truststore.location", kafkaPropCFG.getTrustoreLocation());  
 		}
 
-		if(!StringUtility.isNullOrEmpty(String.valueOf(kafkaPropCFG.getTrustorePassword()))) {
+		if(kafkaPropCFG.getTrustorePassword()!=null) {
 			props.put("ssl.truststore.password", String.valueOf(kafkaPropCFG.getTrustorePassword())); 
 		}
+		
+		if("OAUTHBEARER".equals(kafkaPropCFG.getMechanism())) {
+			props.put("sasl.login.callback.handler.class", CustomAuthenticateCallbackHandler.class);
+			props.put("kafka.oauth.tenantId", kafkaPropCFG.getTenantId());	
+			props.put("kafka.oauth.appId", kafkaPropCFG.getAppId());	
+			props.put("kafka.oauth.pwd", kafkaPropCFG.getPwd());	
+		}
+
 
 		return props;
 	}
@@ -154,10 +163,17 @@ public class KafkaProducerCFG {
 			props.put("ssl.truststore.location", kafkaPropCFG.getTrustoreLocation());
 		}
 		
-		if(!StringUtility.isNullOrEmpty(String.valueOf(kafkaPropCFG.getTrustorePassword()))) {
+		if(kafkaPropCFG.getTrustorePassword()!=null) {
 			props.put("ssl.truststore.password", String.valueOf(kafkaPropCFG.getTrustorePassword())); 
 		}
 
+		if("OAUTHBEARER".equals(kafkaPropCFG.getMechanism())) {
+			props.put("sasl.login.callback.handler.class", CustomAuthenticateCallbackHandler.class);
+			props.put("kafka.oauth.tenantId", kafkaPropCFG.getTenantId());	
+			props.put("kafka.oauth.clientId", kafkaPropCFG.getAppId());	
+			props.put("kafka.oauth.pwd", kafkaPropCFG.getPwd());	
+		}
+		
 		return props;
 	}
 

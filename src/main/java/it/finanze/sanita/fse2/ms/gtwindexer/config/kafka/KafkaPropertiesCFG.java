@@ -17,6 +17,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -34,7 +35,7 @@ public class KafkaPropertiesCFG {
 	 *  Boostrap server.
 	 */
 	@Value("${kafka.bootstrap-servers}")
-	private String producerBootstrapServers;
+	private String bootstrapServers;
 	 
 	
 	/**
@@ -66,14 +67,25 @@ public class KafkaPropertiesCFG {
 	 */
 	@Value("${kafka.properties.ssl.truststore.password}")
 	private transient char[] trustorePassword;
+	
+	@Value("${kafka.oauth.tenantId}")
+	private String tenantId;
+
+	@Value("${kafka.oauth.appId}")
+	private String appId;
+
+	@Value("${kafka.oauth.pwd}")
+	private String pwd;
+
 	 
 	@Autowired
 	private ProfileUtility profileUtility;
 
 	@Bean
+	@ConditionalOnProperty(name = "sasl.mechanism", havingValue = "OAUTHBEARER", matchIfMissing = false)
 	public AdminClient client() {
 		Properties configProperties = new Properties();
-    	configProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, producerBootstrapServers);
+    	configProperties.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     	if(!profileUtility.isDevOrDockerProfile() && !profileUtility.isTestProfile()) {
     		configProperties.put("security.protocol", protocol);
     		configProperties.put("sasl.mechanism", mechanism);
