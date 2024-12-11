@@ -31,6 +31,7 @@ import com.microsoft.aad.msal4j.ConfidentialClientApplication;
 import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.aad.msal4j.IClientCredential;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.FileUtility;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,6 +42,8 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
 	
     private String appId;
 	
+    private String pfxName;
+    
     private String pwd;
 	
     private ConfidentialClientApplication aadClient;
@@ -58,6 +61,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
                 .build();
         this.tenantId = "https://login.microsoftonline.com/"+ Arrays.asList(configs.get("kafka.oauth.tenantId")).get(0).toString();
         this.appId = Arrays.asList(configs.get("kafka.oauth.appId")).get(0).toString();
+        this.pfxName = Arrays.asList(configs.get("kafka.oauth.pfxName")).get(0).toString();
         this.pwd = Arrays.asList(configs.get("kafka.oauth.pwd")).get(0).toString();
 
     }
@@ -84,12 +88,12 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
                 if (this.aadClient == null) {
                 	IClientCredential credential = null;
                 	try{
-                		InputStream certificato = new ByteArrayInputStream(FileUtility.getFileFromInternalResources("client_FSD-SA-0005.pfx"));
+                		InputStream certificato = new ByteArrayInputStream(FileUtility.getFileFromInternalResources(pfxName));
                 		credential = ClientCredentialFactory.createFromCertificate(certificato, this.pwd);	
                 	} catch(Exception ex) {
-                		System.out.println("Stop");
+                		log.error("Error while try to crate credential from certificate");
+                		throw new BusinessException(ex);
                 	}
-                	
                     this.aadClient = ConfidentialClientApplication.builder(this.appId, credential)
                             .authority(this.tenantId)
                             .build();
