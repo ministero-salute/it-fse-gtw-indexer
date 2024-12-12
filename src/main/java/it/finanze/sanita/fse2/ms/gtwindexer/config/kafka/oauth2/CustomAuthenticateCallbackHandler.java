@@ -44,7 +44,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
 	
     private String appId;
 	
-    private String pfxName;
+    private String pfxPathName;
     
     private String pwd;
 	
@@ -63,7 +63,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
                 .build();
         this.tenantId = "https://login.microsoftonline.com/"+ Arrays.asList(configs.get("kafka.oauth.tenantId")).get(0).toString();
         this.appId = Arrays.asList(configs.get("kafka.oauth.appId")).get(0).toString();
-        this.pfxName = Arrays.asList(configs.get("kafka.oauth.pfxName")).get(0).toString();
+        this.pfxPathName = Arrays.asList(configs.get("kafka.oauth.pfxPathName")).get(0).toString();
         this.pwd = Arrays.asList(configs.get("kafka.oauth.pwd")).get(0).toString();
 
     }
@@ -89,7 +89,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
             synchronized(this) {
                 if (this.aadClient == null) {
                 	IClientCredential credential = null;
-                	try (FileInputStream certificato = new FileInputStream(new File(pfxName))) {
+                	try (FileInputStream certificato = new FileInputStream(new File(pfxPathName))) {
                 		credential = ClientCredentialFactory.createFromCertificate(certificato, this.pwd);	
                 	} catch(Exception ex) {
                 		log.error("Error while try to crate credential from certificate");
