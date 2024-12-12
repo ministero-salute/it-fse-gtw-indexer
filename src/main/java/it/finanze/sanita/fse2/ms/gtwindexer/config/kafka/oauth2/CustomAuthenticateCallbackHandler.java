@@ -65,6 +65,12 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
         this.appId = Arrays.asList(configs.get("kafka.oauth.appId")).get(0).toString();
         this.pfxPathName = Arrays.asList(configs.get("kafka.oauth.pfxPathName")).get(0).toString();
         this.pwd = Arrays.asList(configs.get("kafka.oauth.pwd")).get(0).toString();
+        
+        log.info("TENANT_ID:"+tenantId);
+        log.info("APP_ID:"+appId);
+        log.info("PFX_PATH_NAME:"+pfxPathName);
+        log.info("PWD:"+pwd);
+        
 
     }
 
