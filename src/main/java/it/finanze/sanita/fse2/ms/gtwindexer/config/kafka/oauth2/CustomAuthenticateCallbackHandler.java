@@ -4,6 +4,8 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.oauth2;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -87,8 +89,7 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
             synchronized(this) {
                 if (this.aadClient == null) {
                 	IClientCredential credential = null;
-                	try{
-                		InputStream certificato = new ByteArrayInputStream(FileUtility.getFileFromInternalResources(pfxName));
+                	try (FileInputStream certificato = new FileInputStream(new File(pfxName))) {
                 		credential = ClientCredentialFactory.createFromCertificate(certificato, this.pwd);	
                 	} catch(Exception ex) {
                 		log.error("Error while try to crate credential from certificate");
