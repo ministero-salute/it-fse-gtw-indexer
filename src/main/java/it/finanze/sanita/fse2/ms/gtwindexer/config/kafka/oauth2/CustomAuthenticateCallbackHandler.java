@@ -3,11 +3,9 @@
 
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.oauth2;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Arrays;
@@ -34,7 +32,6 @@ import com.microsoft.aad.msal4j.IAuthenticationResult;
 import com.microsoft.aad.msal4j.IClientCredential;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.FileUtility;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -65,12 +62,6 @@ public class CustomAuthenticateCallbackHandler implements AuthenticateCallbackHa
         this.appId = Arrays.asList(configs.get("kafka.oauth.appId")).get(0).toString();
         this.pfxPathName = Arrays.asList(configs.get("kafka.oauth.pfxPathName")).get(0).toString();
         this.pwd = Arrays.asList(configs.get("kafka.oauth.pwd")).get(0).toString();
-        
-        log.info("TENANT_ID:"+tenantId);
-        log.info("APP_ID:"+appId);
-        log.info("PFX_PATH_NAME:"+pfxPathName);
-        log.info("PWD:"+pwd);
-        
 
     }
 
