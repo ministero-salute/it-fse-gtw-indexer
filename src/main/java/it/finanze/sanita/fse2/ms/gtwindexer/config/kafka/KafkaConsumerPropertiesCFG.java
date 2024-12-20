@@ -63,11 +63,6 @@ public class KafkaConsumerPropertiesCFG {
 	@Value("${kafka.consumer.value-deserializer}")
 	private String consumerValueDeserializer;
 
-	/**
-	 * Consumer bootstrap server.
-	 */
-	@Value("${kafka.consumer.bootstrap-servers}")
-	private String consumerBootstrapServers;
 
 	/**
 	 * Isolation level.

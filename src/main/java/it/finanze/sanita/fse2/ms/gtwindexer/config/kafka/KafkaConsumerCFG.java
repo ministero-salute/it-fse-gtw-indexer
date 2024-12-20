@@ -11,7 +11,11 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,12 +32,9 @@ import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.oauth2.CustomAuthenticateCallbackHandler;
 import it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
@@ -46,6 +47,9 @@ public class KafkaConsumerCFG {
 	 */
 	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
+	
+	@Autowired
+	private KafkaPropertiesCFG kafkaPropCFG;
 
 	@Autowired
 	private KafkaTopicCFG kafkaTopicCFG;
@@ -60,14 +64,12 @@ public class KafkaConsumerCFG {
 		Map<String, Object> props = new HashMap<>();
 
 		props.put(ConsumerConfig.CLIENT_ID_CONFIG, kafkaConsumerPropCFG.getClientId());
-		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConsumerPropCFG.getConsumerBootstrapServers());
-//		props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaConsumerPropCFG.getConsumerGroupId());
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaPropCFG.getBootstrapServers());
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, kafkaConsumerPropCFG.getConsumerKeyDeserializer());
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, kafkaConsumerPropCFG.getConsumerValueDeserializer());
 		props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG, kafkaConsumerPropCFG.getIsolationLevel());
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, kafkaConsumerPropCFG.getAutoCommit());
 		props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaConsumerPropCFG.getAutoOffsetReset());
-
 
 		if(!StringUtility.isNullOrEmpty(kafkaConsumerPropCFG.getProtocol())) {
 			props.put("security.protocol", kafkaConsumerPropCFG.getProtocol());
@@ -85,9 +87,19 @@ public class KafkaConsumerCFG {
 			props.put("ssl.truststore.location", kafkaConsumerPropCFG.getTrustoreLocation());
 		}
 
-		if(!StringUtility.isNullOrEmpty(String.valueOf(kafkaConsumerPropCFG.getTrustorePassword()))) {
+		if(kafkaConsumerPropCFG.getTrustorePassword()!=null && kafkaConsumerPropCFG.getTrustorePassword().length>0) {
 			props.put("ssl.truststore.password", String.valueOf(kafkaConsumerPropCFG.getTrustorePassword()));
 		}
+		
+		if("OAUTHBEARER".equals(kafkaPropCFG.getMechanism())) {
+			props.put("sasl.login.callback.handler.class", CustomAuthenticateCallbackHandler.class);
+			props.put("kafka.oauth.tenantId", kafkaPropCFG.getTenantId());	
+			props.put("kafka.oauth.appId", kafkaPropCFG.getAppId());
+			props.put("kafka.oauth.pfxPathName", kafkaPropCFG.getPfxPathName());
+			props.put("kafka.oauth.pwd", kafkaPropCFG.getPwd());	
+		}
+
+
 		return props;
 	}
 
