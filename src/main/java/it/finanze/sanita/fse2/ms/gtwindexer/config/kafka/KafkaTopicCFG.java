@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 
 import lombok.Data;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 /**
  *
