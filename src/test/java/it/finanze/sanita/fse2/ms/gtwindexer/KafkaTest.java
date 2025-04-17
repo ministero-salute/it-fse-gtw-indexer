@@ -11,7 +11,47 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer;
 
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.EMPTY_JSON;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.FAILURE_RESPONSE_INI_DTO;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.SUCCESS_RESPONSE_INI_DTO;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeDeleteRequest;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeRetryRequest;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.testWorkflowInstanceId;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.concurrent.ExecutionException;
+
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Description;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.messaging.MessageHeaders;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+
 import com.google.gson.Gson;
+
 import it.finanze.sanita.fse2.ms.gtwindexer.client.impl.IniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
@@ -22,50 +62,25 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Description;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.concurrent.ExecutionException;
-
-import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(Constants.Profile.TEST)
 @EmbeddedKafka
 class KafkaTest extends AbstractTest {
 	
-	@SpyBean
+	@MockitoSpyBean
 	private IKafkaSRV kafkaSRV;
 
 	@Autowired
 	private KafkaTopicCFG kafkaTopicCFG;
 
-	@SpyBean
+	@MockitoSpyBean
 	private IniClient iniClient;
 
-	@SpyBean
+	@MockitoSpyBean
 	private RestTemplate restTemplate;
 
-	@MockBean
+	@MockitoBean
 	private IConfigSRV config;
 
 	@Test
