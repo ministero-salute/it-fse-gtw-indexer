@@ -11,6 +11,9 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * 
  *
@@ -58,4 +61,10 @@ public final class Constants {
 		private Logs() {}
 		public static final String MESSAGE_PRIORITY = "Message priority: {}";
     }
+    
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+	public static final class Properties {
+		public static final String MS_NAME = "gtw-indexer";
+		 
+	}
 }
