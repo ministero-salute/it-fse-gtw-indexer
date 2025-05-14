@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class JWTPayloadDTO {
 
+
 	/**
 	 * Identificativo dell’entità che ha generato il token.
 	 * Valorizzato con l’identificativo della struttura utente.
@@ -33,13 +34,13 @@ public class JWTPayloadDTO {
 	 * Numero intero (timestamp in secondi) che indica il momento in cui il token è
 	 * stato generato, serve per conoscere l’età di un token.
 	 */
-	private long iat;
+	private int iat;
 
 	/**
 	 * Numero intero (timestamp in secondi) che indica fino a quando il token sarà
 	 * valido.
 	 */
-	private long exp;
+	private int exp;
 
 	/**
 	 * Identificativo univoco del token, serve per prevenire la generazione
@@ -58,15 +59,12 @@ public class JWTPayloadDTO {
 	 */
 	private String sub;
 
+	private String subject_organization;
+
 	/**
 	 * Identificativo del dominio dell’utente (vedi TABELLA ORGANIZZAZIONE).
 	 */
 	private String subject_organization_id;
-
-	/**
-	 * Descrizione del dominio dell’utente (vedi TABELLA ORGANIZZAZIONE);
-	 */
-	private String subject_organization;
 
 	/**
 	 * Identificativo della struttura utente.
@@ -115,6 +113,17 @@ public class JWTPayloadDTO {
 	private String action_id;
 
 	private String attachment_hash;
+
+	private String subject_application_id;
+
+	private String subject_application_vendor;
+
+	private String subject_application_version;
 	
+	/**
+	 * Tale flag indica che il subject id risulta essere l'author.
+	 * Valore booleano.
+	 */
+	private boolean use_subject_as_author;
 	 
 }

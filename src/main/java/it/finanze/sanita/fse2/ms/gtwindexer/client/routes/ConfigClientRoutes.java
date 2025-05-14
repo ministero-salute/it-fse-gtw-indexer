@@ -23,7 +23,7 @@ public final class ConfigClientRoutes {
     private String configHost;
 
     public UriComponentsBuilder base() {
-        return UriComponentsBuilder.fromHttpUrl(configHost);
+        return UriComponentsBuilder.fromUriString(configHost);
     }
 
     public String identifier() {
