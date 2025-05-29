@@ -43,11 +43,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static it.finanze.sanita.fse2.ms.gtwindexer.config.Constants.Logs.MESSAGE_PRIORITY;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum.*;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.KafkaUtility.getTraceContext;
 import static it.finanze.sanita.fse2.ms.gtwindexer.utility.StringUtility.toJSONJackson;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -78,31 +76,18 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	private IConfigSRV configSRV;
 
 	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.low-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.low}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id-low}'}")
-	public void lowPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
+	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.base-topic}'}",
+			clientIdPrefix = "#{'${kafka.consumer.client-id}'}",
+			containerFactory = "kafkaListenerDeadLetterContainerFactory",
+			autoStartup = "${event.topic.auto.start}",
+			groupId = "#{'${kafka.consumer.group-id-common}'}")
+	public void publishedDocListener(ConsumerRecord<String, String> cr,
+			@Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		long startTime = System.currentTimeMillis();
-		log.info(MESSAGE_PRIORITY, LOW.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(LOW), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
-		long endTime = startTime - System.currentTimeMillis();
-		log.info("TIME TO PROCESS:" + endTime);		
-	}
-
-	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.medium-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.medium}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id-medium}'}")
-	public void mediumPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		long startTime = System.currentTimeMillis();
-		log.info(MESSAGE_PRIORITY, MEDIUM.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(MEDIUM), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
-		long endTime = startTime - System.currentTimeMillis();
-		log.info("TIME TO PROCESS:" + endTime);
-	}
-
-	@Override
-	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.topic.high-priority}'}",  clientIdPrefix = "#{'${kafka.consumer.client-id.high}'}", containerFactory = "kafkaListenerDeadLetterContainerFactory", autoStartup = "${event.topic.auto.start}", groupId = "#{'${kafka.consumer.group-id-high}'}")
-	public void highPriorityListener( ConsumerRecord<String, String> cr, @Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		long startTime = System.currentTimeMillis();
-		log.info(MESSAGE_PRIORITY, HIGH.getDescription());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(HIGH), new Date(), req) , delivery, IndexerValueDTO::getWorkflowInstanceId);
+		log.info("Processing Kafka Event: {}", cr.key());
+		loop(cr, IndexerValueDTO.class,
+				req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req),
+				delivery, IndexerValueDTO::getWorkflowInstanceId);
 		long endTime = startTime - System.currentTimeMillis();
 		log.info("TIME TO PROCESS:" + endTime);
 	}

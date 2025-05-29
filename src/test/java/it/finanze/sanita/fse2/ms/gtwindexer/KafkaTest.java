@@ -86,19 +86,14 @@ class KafkaTest extends AbstractTest {
 	@Test
 	@Description("Publication - Success")
 	void kafkaListenerPublicationSuccessTest() throws ExecutionException, InterruptedException {
-		String topicLow = kafkaTopicCFG.getDispatcherIndexerLowPriorityTopic();
-		String topicMedium = kafkaTopicCFG.getDispatcherIndexerMediumPriorityTopic();
-		String topicHigh = kafkaTopicCFG.getDispatcherIndexerHighPriorityTopic();
+		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
 		
 		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
 
-		this.kafkaInit(topicLow, testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicMedium, testWorkflowInstanceId, kafkaValue);
-		this.kafkaInit(topicHigh, testWorkflowInstanceId, kafkaValue);
+		this.kafkaInit(topic, testWorkflowInstanceId, kafkaValue);
 
-		ConsumerRecord<String, String> recordLow = new ConsumerRecord<>(topicLow, 1, 0, topicLow, kafkaValue);
-		ConsumerRecord<String, String> recordMedium = new ConsumerRecord<>(topicMedium, 1, 0, topicMedium, kafkaValue);
-		ConsumerRecord<String, String> recordHigh = new ConsumerRecord<>(topicHigh, 1, 0, topicHigh, kafkaValue);
+		ConsumerRecord<String, String> record =
+				new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
 
 		IniTraceResponseDTO responseDTO = new IniTraceResponseDTO();
 		responseDTO.setEsito(true);
@@ -106,20 +101,19 @@ class KafkaTest extends AbstractTest {
 				.postForObject(anyString(), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 
 		when(config.isRemoveEds()).thenReturn(false);
-		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow,0));
-		assertDoesNotThrow(() -> kafkaSRV.mediumPriorityListener(recordMedium,0));
-		assertDoesNotThrow(() -> kafkaSRV.highPriorityListener(recordHigh,0));
+		assertDoesNotThrow(() -> kafkaSRV.publishedDocListener(record, 0));
 	}
 
 	 
 	@Test
 	@Description("Replace - Success")
 	void kafkaListenerReplaceSuccessTest() {
-		String topicLow = kafkaTopicCFG.getDispatcherIndexerLowPriorityTopic();
+		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
 		
 		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
 
-		ConsumerRecord<String, String> recordLow = new ConsumerRecord<>(topicLow, 1, 0, topicLow, kafkaValue);
+		ConsumerRecord<String, String> recordLow =
+				new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
 		IniTraceResponseDTO responseDTO = new IniTraceResponseDTO();
 		responseDTO.setEsito(true);
 
@@ -127,7 +121,7 @@ class KafkaTest extends AbstractTest {
 						.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
 
 		when(config.isRemoveEds()).thenReturn(false);
-		assertDoesNotThrow(() -> kafkaSRV.lowPriorityListener(recordLow, 0));
+		assertDoesNotThrow(() -> kafkaSRV.publishedDocListener(recordLow, 0));
 	}
 
 	@Test

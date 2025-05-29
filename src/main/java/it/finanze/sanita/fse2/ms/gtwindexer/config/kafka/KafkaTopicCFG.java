@@ -34,22 +34,10 @@ public class KafkaTopicCFG {
 	private ProfileUtility profileUtility;
 
 	/**
-	 * Dispatcher indexer low priority Topic.
+	 * Dispatcher indexer Topic.
 	 */
-	@Value("${kafka.dispatcher-indexer.topic.low-priority}")
-	private String dispatcherIndexerLowPriorityTopic;
-
-	/**
-	 * Dispatcher indexer medium priority Topic.
-	 */
-	@Value("${kafka.dispatcher-indexer.topic.medium-priority}")
-	private String dispatcherIndexerMediumPriorityTopic;
-
-	/**
-	 * Dispatcher indexer high priority Topic.
-	 */
-	@Value("${kafka.dispatcher-indexer.topic.high-priority}")
-	private String dispatcherIndexerHighPriorityTopic;
+	@Value("${kafka.dispatcher-indexer.base-topic}")
+	private String dispatcherIndexerTopic;
 
 	/**
 	 * Dispatcher indexer Dead letter Topic. 
@@ -70,7 +58,7 @@ public class KafkaTopicCFG {
 	private String dispatcherIndexerUpdateRetryTopic;
 
 	/**
-	 * Indexer publisher low priority Topic.
+	 * Indexer publisher Topic.
 	 */
 	@Value("${kafka.indexer-publisher.topic}")
 	private String indexerPublisherTopic;
@@ -84,9 +72,8 @@ public class KafkaTopicCFG {
 	@PostConstruct
 	public void afterInit() {
 		if (profileUtility.isTestProfile()) {
-			this.dispatcherIndexerLowPriorityTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerLowPriorityTopic;
-			this.dispatcherIndexerMediumPriorityTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerMediumPriorityTopic;
-			this.dispatcherIndexerHighPriorityTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerHighPriorityTopic;
+			this.dispatcherIndexerTopic =
+					Constants.Profile.TEST_PREFIX + this.dispatcherIndexerTopic;
 			this.dispatcherIndexerDeadLetterTopic = Constants.Profile.TEST_PREFIX + this.dispatcherIndexerDeadLetterTopic;
 			this.dispatcherIndexerDeleteRetryTopic =  Constants.Profile.TEST_PREFIX + this.dispatcherIndexerDeleteRetryTopic;
 			this.dispatcherIndexerUpdateRetryTopic =  Constants.Profile.TEST_PREFIX + this.dispatcherIndexerUpdateRetryTopic;
@@ -95,7 +82,4 @@ public class KafkaTopicCFG {
 		}
 	}
 
-	public String getIndexerPublisherTopic(PriorityTypeEnum priority) {
-		return indexerPublisherTopic + priority.getQueue();
-	}
 }

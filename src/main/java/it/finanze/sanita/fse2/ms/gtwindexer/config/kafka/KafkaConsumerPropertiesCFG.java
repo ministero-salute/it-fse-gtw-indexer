@@ -39,15 +39,6 @@ public class KafkaConsumerPropertiesCFG {
 	/**
 	 * Group id consumer.
 	 */
-	@Value("${kafka.consumer.group-id-high}")
-	private String consumerGroupIdHigh;
-	
-	@Value("${kafka.consumer.group-id-medium}")
-	private String consumerGroupIdMedium;
-	
-	@Value("${kafka.consumer.group-id-low}")
-	private String consumerGroupIdLow;
-	
 	@Value("${kafka.consumer.group-id-common}")
 	private String consumerGroupIdCommon;
 
