@@ -81,7 +81,6 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	@Autowired
 	private IConfigSRV configSRV;
 	
-	private static final String MOCK_MESSAGE = "Regime di mock abilitato";
 
 	@Override
 	@KafkaListener(topics = "#{'${kafka.dispatcher-indexer.base-topic}'}",
@@ -137,8 +136,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
-		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds() 
-				&& !MOCK_MESSAGE.equals(response.getMessage())) { 
+		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds()) { 
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
 				sendMessage(destTopic, cr.key(), cr.value());

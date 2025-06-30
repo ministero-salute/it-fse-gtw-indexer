@@ -21,7 +21,7 @@ public class IniTraceResponseDTO extends ResponseDTO {
 	private Boolean esito;
 
 	private String message;
-
+	
 	public IniTraceResponseDTO() {
 		super();
 	}
