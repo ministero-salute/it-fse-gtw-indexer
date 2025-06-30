@@ -83,13 +83,10 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 			groupId = "#{'${kafka.consumer.group-id-common}'}")
 	public void publishedDocListener(ConsumerRecord<String, String> cr,
 			@Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
-		long startTime = System.currentTimeMillis();
 		log.info("Processing Kafka Event: {}", cr.key());
 		loop(cr, IndexerValueDTO.class,
 				req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req),
 				delivery, IndexerValueDTO::getWorkflowInstanceId);
-		long endTime = startTime - System.currentTimeMillis();
-		log.info("TIME TO PROCESS:" + endTime);
 	}
 
 	@Override
