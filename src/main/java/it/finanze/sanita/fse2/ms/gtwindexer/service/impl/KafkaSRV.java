@@ -91,9 +91,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	public void publishedDocListener(ConsumerRecord<String, String> cr,
 			@Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.info("Processing Kafka Event: {}", cr.key());
-		loop(cr, IndexerValueDTO.class,
-				req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req),
-				delivery, IndexerValueDTO::getWorkflowInstanceId);
+		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req), delivery, IndexerValueDTO::getWorkflowInstanceId);
 	}
 
 	@Override
@@ -136,7 +134,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
-		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds()) { 
+		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds()
+				&& Boolean.FALSE.equals(response.getMockEds())) { 
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
 				sendMessage(destTopic, cr.key(), cr.value());

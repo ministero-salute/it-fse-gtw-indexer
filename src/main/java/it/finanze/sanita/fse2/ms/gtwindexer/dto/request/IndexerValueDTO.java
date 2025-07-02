@@ -37,4 +37,5 @@ public class IndexerValueDTO {
      * Enum of the operation to perform on EDS
      */
     private ProcessorOperationEnum edsDPOperation;
+    
 }

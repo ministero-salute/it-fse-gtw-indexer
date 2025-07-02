@@ -22,6 +22,8 @@ public class IniTraceResponseDTO extends ResponseDTO {
 
 	private String message;
 	
+	private Boolean mockEds;
+	
 	public IniTraceResponseDTO() {
 		super();
 	}
