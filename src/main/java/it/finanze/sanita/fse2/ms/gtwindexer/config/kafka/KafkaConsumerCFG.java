@@ -99,6 +99,9 @@ public class KafkaConsumerCFG {
 			props.put("kafka.oauth.pwd", kafkaPropCFG.getPwd());	
 		}
 
+		if(!StringUtility.isNullOrEmpty(kafkaPropCFG.getCallbackHandlerClass())) {
+			props.put("sasl.client.callback.handler.class", kafkaPropCFG.getCallbackHandlerClass());
+		}
 
 		return props;
 	}

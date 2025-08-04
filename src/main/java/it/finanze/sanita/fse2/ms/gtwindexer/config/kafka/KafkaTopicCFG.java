@@ -11,16 +11,14 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.config.kafka;
 
-import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.PriorityTypeEnum;
-import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import lombok.Data;
-
+import it.finanze.sanita.fse2.ms.gtwindexer.config.Constants;
+import it.finanze.sanita.fse2.ms.gtwindexer.utility.ProfileUtility;
 import jakarta.annotation.PostConstruct;
+import lombok.Data;
 
 /**
  *
