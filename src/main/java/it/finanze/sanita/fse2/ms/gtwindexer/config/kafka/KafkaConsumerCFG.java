@@ -136,7 +136,7 @@ public class KafkaConsumerCFG {
 				dlt, (consumerRecord, ex) -> new TopicPartition(kafkaTopicCFG.getDispatcherIndexerDeadLetterTopic(), -1));
 
 		// Set classificazione errori da gestire per la deadLetter.
-		DefaultErrorHandler policy = new DefaultErrorHandler(dlpr, new FixedBackOff());
+		DefaultErrorHandler policy = new DefaultErrorHandler(dlpr, new FixedBackOff(kafkaConsumerPropCFG.getRetryIntervalMs(), kafkaConsumerPropCFG.getNRetry()));
 
 		log.debug("setClassification - kafkaListenerDeadLetterContainerFactory: ");
 		setClassification(policy);

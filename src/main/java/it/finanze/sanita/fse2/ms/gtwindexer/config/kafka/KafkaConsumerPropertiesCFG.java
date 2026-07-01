@@ -116,6 +116,12 @@ public class KafkaConsumerPropertiesCFG {
 	private Integer nRetry;
 	
 	/**
+	 * Kafka retry.
+	 */
+	@Value("${kafka.retryIntervalMs}")
+	private Integer retryIntervalMs;
+	
+	/**
 	 * Eccezioni temporanee.
 	 */
 	@Value("#{${kafka.consumer.temporary-exc}}")
