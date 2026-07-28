@@ -134,8 +134,11 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
-		if (Boolean.TRUE.equals(response.getEsito()) && !configSRV.isRemoveEds()
-				&& Boolean.FALSE.equals(response.getMockEds())) { 
+		if (Boolean.TRUE.equals(response.getEsito())
+                && !configSRV.isRemoveEds()
+                && Boolean.FALSE.equals(response.getMockEds())
+                && Boolean.TRUE.equals(valueInfo.getEdsPublished())
+            ) {
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
 				sendMessage(destTopic, cr.key(), cr.value());

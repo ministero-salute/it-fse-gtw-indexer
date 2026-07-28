@@ -37,5 +37,16 @@ public class IndexerValueDTO {
      * Enum of the operation to perform on EDS
      */
     private ProcessorOperationEnum edsDPOperation;
+
+    /**
+     * Whether the document was published to EDS.
+     * true = this EDS operation should be performed; false = skip this EDS
+     * operation.
+     * valorized with:
+     * (!configSRV.isRemoveEds()) for create flow
+     * (!configSRV.isRemoveEds() && "TRUE".equals(docMetadata.EDSPublished))
+     * for replace flow
+     */
+    private Boolean edsPublished;
     
 }
