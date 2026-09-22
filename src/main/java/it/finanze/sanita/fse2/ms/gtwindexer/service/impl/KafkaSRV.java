@@ -209,6 +209,15 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				// Quit flag
 				exit = true;
 			} catch (Exception e) {
+				// After the first creation request (delivery == 1), INI may throw a timeout even if the document has been successfully indexed.
+				// On next attempts, a BlockingIniException with error R224 is raised because the document is already present in INI.
+				// For this reason the status and eds are notified after the second attempt.
+				if ((delivery > 1) && (e instanceof BlockingIniException) && (e.getMessage().contains("R224"))) {
+					log.warn("The status and the publisher were notified following a timeout and an R224 error for the workflow istance id {}", wif);
+					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, null); 
+					sendMessage(topics.getIndexerPublisherTopic(), cr.key(), cr.value()); 
+					throw e; 
+				}
 				// Assign
 				ex = e;
 				// Display help

@@ -12,7 +12,7 @@
 	
 	<groupId>it.finanze.sanita.fse2</groupId>
 	<artifactId>gtw-indexer-ms</artifactId>
-	<version>0.3.0-RELEASE</version>
+	<version>1.0.1</version>
 	<name>gtw-indexer-ms</name>
 	<description>Gateway Indexer FSE</description>
 	<properties>
