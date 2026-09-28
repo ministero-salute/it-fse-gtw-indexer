@@ -19,6 +19,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.messaging.MessageHeaders;
 
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class TestConstants {
@@ -39,21 +40,28 @@ public class TestConstants {
         "KaBoom!"
     );
 
-    public final static IniDeleteRequestDTO DELETE_REQUEST_DTO = new IniDeleteRequestDTO(
-        testDocumentId,
-        "uuid",
-        "integrity:S1#110201234567XX",
-        "SSSMNN75B01F257L^^^&amp;2.16.840.1.113883.2.9.4.3.2&amp;ISO",
-        "110",
-        "Regione Marche",
-        "110",
-        "APR",
-        "GTWGWY82B42G920M",
-        "TREATMENT",
-        "('11502-2^^2.16.840.1.113883.6.1')",
-        "READ",
-        true
-    );
+    public final static IniDeleteRequestDTO DELETE_REQUEST_DTO = IniDeleteRequestDTO.builder()
+        .idDoc(testDocumentId)
+        .uuid(Collections.singletonList("uuid"))
+        .sub("integrity:S1#110201234567XX")
+        .iss("SSSMNN75B01F257L^^^&amp;2.16.840.1.113883.2.9.4.3.2&amp;ISO")
+        .subject_organization("110")
+        .subject_organization_id("Regione Marche")
+        .locality("110")
+        .subject_role("APR")
+        .person_id("GTWGWY82B42G920M")
+        .purpose_of_use("TREATMENT")
+        .action_id("('11502-2^^2.16.840.1.113883.6.1')")
+        .resource_hl7_type("READ")
+        .patient_consent(true)
+        .documentType("('11502-2^^2.16.840.1.113883.6.1')")
+        .subject_application_id("subjectApplicationId")
+        .subject_application_vendor("subjectApplicationVendor")
+        .subject_application_version("subjectApplicationVersion")
+        .workflow_instance_id(testWorkflowInstanceId)
+        .administrative_request(Collections.singletonList("administrativeRequest"))
+        .author_institution("authorInstitution")
+        .build();
 
     public static AbstractMap.SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> getFakeRetryRequest(String topic, String json) {
         return new AbstractMap.SimpleImmutableEntry<>(

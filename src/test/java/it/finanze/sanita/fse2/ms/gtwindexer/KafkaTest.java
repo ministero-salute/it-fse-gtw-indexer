@@ -88,7 +88,7 @@ class KafkaTest extends AbstractTest {
 	void kafkaListenerPublicationSuccessTest() throws ExecutionException, InterruptedException {
 		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
 		
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH, Boolean.FALSE));
 
 		this.kafkaInit(topic, testWorkflowInstanceId, kafkaValue);
 
@@ -110,7 +110,7 @@ class KafkaTest extends AbstractTest {
 	void kafkaListenerReplaceSuccessTest() {
 		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
 		
-		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE));
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.REPLACE, Boolean.TRUE));
 
 		ConsumerRecord<String, String> recordLow =
 				new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);

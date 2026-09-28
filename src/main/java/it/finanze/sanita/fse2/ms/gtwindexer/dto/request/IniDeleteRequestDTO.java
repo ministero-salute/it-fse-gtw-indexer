@@ -11,18 +11,26 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer.dto.request;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Payload del topic di retry della delete, prodotto dal gtw-dispatcher e inoltrato
+ * al gtw-ini-client. Deve restare allineato a:
+ * - it.finanze.sanita.fse2.ms.gtw.dispatcher.dto.request.DeleteRequestDTO (produttore)
+ * - it.finanze.sanita.fse2.ms.iniclient.dto.DeleteRequestDTO (consumatore finale)
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class IniDeleteRequestDTO {
     private String idDoc;
-    private String uuid;
+    private List<String> uuid;
     private String sub;
     private String iss;
     private String subject_organization;
@@ -34,4 +42,11 @@ public class IniDeleteRequestDTO {
     private String action_id;
     private String resource_hl7_type;
     private Boolean patient_consent;
+    private String documentType;
+    private String subject_application_id;
+    private String subject_application_vendor;
+    private String subject_application_version;
+    private String workflow_instance_id;
+    private List<String> administrative_request;
+    private String author_institution;
 }
