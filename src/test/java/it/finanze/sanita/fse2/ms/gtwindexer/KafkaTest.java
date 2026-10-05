@@ -11,6 +11,7 @@
  */
 package it.finanze.sanita.fse2.ms.gtwindexer;
 
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.CRF1_RESPONSE_INI_DTO;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.EMPTY_JSON;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.FAILURE_RESPONSE_INI_DTO;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.SUCCESS_RESPONSE_INI_DTO;
@@ -60,6 +61,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.TransientTimeoutIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 
@@ -253,6 +255,39 @@ class KafkaTest extends AbstractTest {
 		ConsumerRecord<String, String> key = req.getKey();
 		assertNotNull(key);
 		assertThrows(BlockingIniException.class, () -> kafkaSRV.retryDeleteListener(key,  0));
+	}
+
+	@Test
+	@Description("Publication - CRF1 response is classified as transient and throws TransientTimeoutIniException")
+	void kafkaListenerPublicationCrf1IsTransientTest() throws ExecutionException, InterruptedException {
+		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
+		final String kafkaValue = new Gson().toJson(new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH, Boolean.FALSE));
+		ConsumerRecord<String, String> record = new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
+
+		// INI-client returns esito=false with a CRF1 error code in the message
+		doReturn(CRF1_RESPONSE_INI_DTO).when(restTemplate)
+				.postForObject(anyString(), any(HttpEntity.class), eq(IniTraceResponseDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+
+		// Must throw TransientTimeoutIniException, NOT BlockingIniException
+		assertThrows(TransientTimeoutIniException.class, () -> kafkaSRV.publishedDocListener(record, 1));
+	}
+
+	@Test
+	@Description("Delete retry - CRF1 response is classified as transient and throws TransientTimeoutIniException")
+	void retryDeleteCrf1IsTransientTest() {
+		SimpleImmutableEntry<ConsumerRecord<String, String>, MessageHeaders> req = getFakeRetryRequest(
+			kafkaTopicCFG.getDispatcherIndexerDeleteRetryTopic(),
+			getFakeDeleteRequest()
+		);
+		// INI-client returns esito=false with a CRF1 error code in the message
+		doReturn(CRF1_RESPONSE_INI_DTO).when(iniClient).delete(any(IniDeleteRequestDTO.class));
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+
+		ConsumerRecord<String, String> key = req.getKey();
+		assertNotNull(key);
+		// Must throw TransientTimeoutIniException, NOT BlockingIniException
+		assertThrows(TransientTimeoutIniException.class, () -> kafkaSRV.retryDeleteListener(key, 1));
 	}
 
 	@Test

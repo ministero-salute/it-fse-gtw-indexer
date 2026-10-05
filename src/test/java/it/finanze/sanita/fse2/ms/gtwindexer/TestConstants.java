@@ -40,6 +40,13 @@ public class TestConstants {
         "KaBoom!"
     );
 
+    // Matches the format produced by IniInvocationSRV: "SEVERITY:...ERROR_CODE:CRF1CODE CONTEXT:..."
+    public final static IniTraceResponseDTO CRF1_RESPONSE_INI_DTO = new IniTraceResponseDTO(
+        new LogTraceInfoDTO("test", "test"),
+        false,
+        "SEVERITY:urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:ErrorERROR_CODE:CRF1CODE CONTEXT:test"
+    );
+
     public final static IniDeleteRequestDTO DELETE_REQUEST_DTO = IniDeleteRequestDTO.builder()
         .idDoc(testDocumentId)
         .uuid(Collections.singletonList("uuid"))

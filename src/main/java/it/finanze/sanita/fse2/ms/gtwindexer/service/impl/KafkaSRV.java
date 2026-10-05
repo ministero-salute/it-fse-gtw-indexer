@@ -13,6 +13,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR_MAX_RETRY;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
@@ -50,6 +51,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.TransientTimeoutIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IAccreditamentoSimulationSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
@@ -146,8 +148,12 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				throw new BlockingIniException(ex);
 			}
 		} else if (Boolean.FALSE.equals(response.getEsito())) {
+			if (response.getMessage() != null && response.getMessage().contains("CRF1")) {
+				// CRF1 is a transient INI error: let the existing retry mechanism handle it
+				throw new TransientTimeoutIniException(response.getMessage());
+			}
 			throw new BlockingIniException(response.getMessage());
-		}  
+		}
 		return response;
 	}
 
@@ -203,6 +209,8 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				// Everything has been resolved
 				if (Boolean.TRUE.equals(res.getEsito())) {
 					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, res.getMessage());
+				} else if (res.getMessage() != null && res.getMessage().contains("CRF1")) {
+					throw new TransientTimeoutIniException(res.getMessage());
 				} else {
 					throw new BlockingIniException(res.getMessage());
 				}
