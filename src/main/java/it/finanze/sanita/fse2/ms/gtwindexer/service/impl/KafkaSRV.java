@@ -93,7 +93,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	public void publishedDocListener(ConsumerRecord<String, String> cr,
 			@Header(KafkaHeaders.DELIVERY_ATTEMPT) int delivery) throws Exception {
 		log.info("Processing Kafka Event: {}", cr.key());
-		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req), delivery, IndexerValueDTO::getWorkflowInstanceId);
+		loop(cr, IndexerValueDTO.class, req -> publishAndReplace(cr, topics.getIndexerPublisherTopic(), new Date(), req, delivery), delivery, IndexerValueDTO::getWorkflowInstanceId);
 	}
 
 	@Override
@@ -130,29 +130,41 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 		}
 	}
  
-	private IniTraceResponseDTO publishAndReplace(ConsumerRecord<String, String> cr, String destTopic, Date startDateOperation, IndexerValueDTO valueInfo) {
+	private IniTraceResponseDTO publishAndReplace(ConsumerRecord<String, String> cr, String destTopic, Date startDateOperation, IndexerValueDTO valueInfo, int delivery) {
 
 		if(accreditamentoSimulationCFG.isEnableCheck()) accreditamentoSRV.runSimulation(valueInfo.getIdDoc());
 		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
+		if (Boolean.FALSE.equals(response.getEsito())) {
+			if (response.getMessage() != null && response.getMessage().contains("CRF1")) {
+				// CRF1 is a transient INI error: let the existing retry mechanism handle it
+				throw new TransientTimeoutIniException(response.getMessage());
+			}
+			if (delivery > 1 && response.getMessage() != null && response.getMessage().contains("R224")) {
+				// delivery > 1 means Kafka is re-delivering after a prior attempt that timed out (CRF1).
+				// INI replies R224 because it already indexed the document during that timed-out attempt.
+				// Treat this as success: override esito so the normal EDS-notification path below runs,
+				// applying the same guards (removeEds, mockEds, edsPublished) as a real success would.
+				log.warn("R224 on retry (delivery={}) for wif {}: document already indexed, treating as success",
+						delivery, valueInfo.getWorkflowInstanceId());
+				response.setEsito(true);
+			} else {
+				throw new BlockingIniException(response.getMessage());
+			}
+		}
+
 		if (Boolean.TRUE.equals(response.getEsito())
-                && !configSRV.isRemoveEds()
-                && Boolean.FALSE.equals(response.getMockEds())
-                && Boolean.TRUE.equals(valueInfo.getEdsPublished())
-            ) {
+	               && !configSRV.isRemoveEds()
+	               && Boolean.FALSE.equals(response.getMockEds())
+	               && Boolean.TRUE.equals(valueInfo.getEdsPublished())
+	           ) {
 			log.debug("Successfully sent data to INI for workflow instance id" + valueInfo.getWorkflowInstanceId() + " with response: true", OperationLogEnum.CALL_INI, ResultLogEnum.OK, startDateOperation);
 			try {
 				sendMessage(destTopic, cr.key(), cr.value());
 			}catch(Exception ex) {
 				throw new BlockingIniException(ex);
 			}
-		} else if (Boolean.FALSE.equals(response.getEsito())) {
-			if (response.getMessage() != null && response.getMessage().contains("CRF1")) {
-				// CRF1 is a transient INI error: let the existing retry mechanism handle it
-				throw new TransientTimeoutIniException(response.getMessage());
-			}
-			throw new BlockingIniException(response.getMessage());
 		}
 		return response;
 	}
@@ -217,15 +229,6 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 				// Quit flag
 				exit = true;
 			} catch (Exception e) {
-				// After the first creation request (delivery == 1), INI may throw a timeout even if the document has been successfully indexed.
-				// On next attempts, a BlockingIniException with error R224 is raised because the document is already present in INI.
-				// For this reason the status and eds are notified after the second attempt.
-				if ((delivery > 1) && (e instanceof BlockingIniException) && (e.getMessage().contains("R224"))) {
-					log.warn("The status and the publisher were notified following a timeout and an R224 error for the workflow istance id {}", wif);
-					sendStatusMessage(wif, SEND_TO_INI, SUCCESS, null); 
-					sendMessage(topics.getIndexerPublisherTopic(), cr.key(), cr.value()); 
-					throw e; 
-				}
 				// Assign
 				ex = e;
 				// Display help

@@ -14,6 +14,7 @@ package it.finanze.sanita.fse2.ms.gtwindexer;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.CRF1_RESPONSE_INI_DTO;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.EMPTY_JSON;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.FAILURE_RESPONSE_INI_DTO;
+import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.R224_RESPONSE_INI_DTO;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.SUCCESS_RESPONSE_INI_DTO;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeDeleteRequest;
 import static it.finanze.sanita.fse2.ms.gtwindexer.TestConstants.getFakeRetryRequest;
@@ -271,6 +272,38 @@ class KafkaTest extends AbstractTest {
 
 		// Must throw TransientTimeoutIniException, NOT BlockingIniException
 		assertThrows(TransientTimeoutIniException.class, () -> kafkaSRV.publishedDocListener(record, 1));
+	}
+
+	@Test
+	@Description("Publication - delivery=2, INI replies R224 (doc already indexed after prior CRF1 timeout): must be treated as SUCCESS")
+	void kafkaListenerR224OnRetryAfterCrf1IsSuccessTest() {
+		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
+		final String kafkaValue = new Gson().toJson(
+				new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH, Boolean.FALSE));
+		// delivery=2: Kafka re-delivers the message after the first attempt timed out with CRF1.
+		// INI now responds R224 because it already indexed the doc during that timed-out attempt.
+		ConsumerRecord<String, String> record = new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
+
+		doReturn(R224_RESPONSE_INI_DTO).when(iniClient).sendPublicationData(anyString());
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+
+		// Must complete without any exception (treated as success)
+		assertDoesNotThrow(() -> kafkaSRV.publishedDocListener(record, 2));
+	}
+
+	@Test
+	@Description("Publication - delivery=1, INI replies R224 without any prior CRF1: must remain a BlockingIniException")
+	void kafkaListenerR224OnFirstDeliveryIsBlockingErrorTest() {
+		String topic = kafkaTopicCFG.getDispatcherIndexerTopic();
+		final String kafkaValue = new Gson().toJson(
+				new IndexerValueDTO(testWorkflowInstanceId, "String", ProcessorOperationEnum.PUBLISH, Boolean.FALSE));
+		// delivery=1: first attempt, R224 with no prior timeout — genuine blocking error
+		ConsumerRecord<String, String> record = new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
+
+		doReturn(R224_RESPONSE_INI_DTO).when(iniClient).sendPublicationData(anyString());
+		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
+
+		assertThrows(BlockingIniException.class, () -> kafkaSRV.publishedDocListener(record, 1));
 	}
 
 	@Test

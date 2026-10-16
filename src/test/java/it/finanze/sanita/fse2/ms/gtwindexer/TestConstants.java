@@ -44,7 +44,15 @@ public class TestConstants {
     public final static IniTraceResponseDTO CRF1_RESPONSE_INI_DTO = new IniTraceResponseDTO(
         new LogTraceInfoDTO("test", "test"),
         false,
-        "SEVERITY:urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:ErrorERROR_CODE:CRF1CODE CONTEXT:test"
+        "SEVERITY:urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:ErrorERROR_CODE:CRF1CODE CONTEXT:It is not possible to communicate with the RDA."
+    );
+
+    // R224 = document already indexed on INI — returned on Kafka retry after a prior CRF1 timeout.
+    // Message format mirrors what IniInvocationSRV builds from the RegistryError SOAP attributes.
+    public final static IniTraceResponseDTO R224_RESPONSE_INI_DTO = new IniTraceResponseDTO(
+        new LogTraceInfoDTO("test", "test"),
+        false,
+        "SEVERITY:urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:ErrorERROR_CODE:R224CODE CONTEXT:DocumentEntry already saved in a previous communication"
     );
 
     public final static IniDeleteRequestDTO DELETE_REQUEST_DTO = IniDeleteRequestDTO.builder()
