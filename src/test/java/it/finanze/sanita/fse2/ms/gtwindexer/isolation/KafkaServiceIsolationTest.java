@@ -198,14 +198,56 @@ class KafkaServiceIsolationTest {
         assertTrue(messages().getFirst().value().contains("unclassified"));
     }
 
+    @ParameterizedTest
+    @CsvSource({"PUBLISH,false,false,true,true", "REPLACE,false,false,true,true",
+            "PUBLISH,true,false,true,false", "REPLACE,true,false,true,false",
+            "PUBLISH,false,true,true,false", "REPLACE,false,true,true,false",
+            "PUBLISH,false,false,false,false", "REPLACE,false,false,false,false"})
+    void duplicateResponseOnRedeliverySucceedsAndRespectsEdsGuards(ProcessorOperationEnum operation,
+            boolean removeEds, boolean mockEds, boolean edsPublished, boolean forwarded) throws Exception {
+        when(config.isRemoveEds()).thenReturn(removeEds);
+        IniTraceResponseDTO response = response(false, "R224 duplicate");
+        response.setMockEds(mockEds);
+        when(ini.sendPublicationData("workflow")).thenReturn(response);
+        when(ini.sendReplaceData("workflow")).thenReturn(response);
+        ConsumerRecord<String, String> record = publication(operation, edsPublished);
+
+        assertDoesNotThrow(() -> service.publishedDocListener(record, 2));
+
+        if (operation == PUBLISH) verify(ini).sendPublicationData("workflow");
+        else verify(ini).sendReplaceData("workflow");
+        List<ProducerRecord<String, String>> messages = messages();
+        assertEquals(forwarded ? 2 : 1, messages.size());
+        if (forwarded) {
+            assertEquals("publisher", messages.getFirst().topic());
+            assertEquals(record.key(), messages.getFirst().key());
+            assertEquals(record.value(), messages.getFirst().value());
+        }
+        assertStatus(messages.getLast(), "workflow", SUCCESS, "SEND_TO_INI");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUBLISH", "REPLACE"})
+    void duplicateResponseOnFirstDeliveryRemainsBlocking(ProcessorOperationEnum operation) throws Exception {
+        when(ini.sendPublicationData("workflow")).thenReturn(response(false, "R224 duplicate"));
+        when(ini.sendReplaceData("workflow")).thenReturn(response(false, "R224 duplicate"));
+
+        var failure = assertThrows(BlockingIniException.class,
+                () -> service.publishedDocListener(publication(operation, true), 1));
+
+        assertEquals("R224 duplicate", failure.getMessage());
+        assertEquals(1, messages().size());
+        assertStatus(messages().getFirst(), "workflow", BLOCKING_ERROR, "SEND_TO_INI");
+    }
+
     @Test
-    void duplicateAfterTimeoutNotifiesStatusAndPublisherButStillThrows() throws Exception {
+    void thrownDuplicateExceptionOnRedeliveryRemainsBlockingWithoutForwarding() throws Exception {
         BlockingIniException failure = new BlockingIniException("R224 duplicate");
         when(ini.sendPublicationData("workflow")).thenThrow(failure);
         assertSame(failure, assertThrows(BlockingIniException.class,
                 () -> service.publishedDocListener(publication(PUBLISH, true), 2)));
-        assertStatus(messages().getFirst(), "workflow", SUCCESS, "SEND_TO_INI");
-        assertEquals("publisher", messages().getLast().topic());
+        assertEquals(1, messages().size());
+        assertStatus(messages().getFirst(), "workflow", BLOCKING_ERROR, "SEND_TO_INI");
     }
 
     @Test

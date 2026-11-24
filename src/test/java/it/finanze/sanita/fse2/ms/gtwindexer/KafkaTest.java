@@ -60,6 +60,7 @@ import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.LogTraceInfoDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.TransientTimeoutIniException;
@@ -284,7 +285,8 @@ class KafkaTest extends AbstractTest {
 		// INI now responds R224 because it already indexed the doc during that timed-out attempt.
 		ConsumerRecord<String, String> record = new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
 
-		doReturn(R224_RESPONSE_INI_DTO).when(iniClient).sendPublicationData(anyString());
+		doReturn(new IniTraceResponseDTO(new LogTraceInfoDTO("test", "test"), false, R224_RESPONSE_INI_DTO.getMessage()))
+				.when(iniClient).sendPublicationData(anyString());
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 
 		// Must complete without any exception (treated as success)
@@ -300,7 +302,8 @@ class KafkaTest extends AbstractTest {
 		// delivery=1: first attempt, R224 with no prior timeout — genuine blocking error
 		ConsumerRecord<String, String> record = new ConsumerRecord<>(topic, 1, 0, topic, kafkaValue);
 
-		doReturn(R224_RESPONSE_INI_DTO).when(iniClient).sendPublicationData(anyString());
+		doReturn(new IniTraceResponseDTO(new LogTraceInfoDTO("test", "test"), false, R224_RESPONSE_INI_DTO.getMessage()))
+				.when(iniClient).sendPublicationData(anyString());
 		doNothing().when(kafkaSRV).sendStatusMessage(anyString(), any(), any(), nullable(String.class));
 
 		assertThrows(BlockingIniException.class, () -> kafkaSRV.publishedDocListener(record, 1));
