@@ -13,7 +13,6 @@ package it.finanze.sanita.fse2.ms.gtwindexer.service.impl;
 
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR_MAX_RETRY;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.DESERIALIZE;
 import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum.SEND_TO_INI;
@@ -36,7 +35,6 @@ import com.google.gson.Gson;
 
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
 import it.finanze.sanita.fse2.ms.gtwindexer.client.base.ClientCallback;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.AccreditationSimulationCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.KafkaStatusManagerDTO;
@@ -52,7 +50,6 @@ import it.finanze.sanita.fse2.ms.gtwindexer.enums.ResultLogEnum;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
 import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.TransientTimeoutIniException;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.IAccreditamentoSimulationSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.IKafkaSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.KafkaAbstractSRV;
@@ -69,13 +66,7 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
 	private IIniClient iniClient;
 
 	@Autowired
-	private IAccreditamentoSimulationSRV accreditamentoSRV;
-
-	@Autowired
 	private KafkaConsumerPropertiesCFG kafkaConsumerPropCFG;
-
-	@Autowired
-	private AccreditationSimulationCFG accreditamentoSimulationCFG;
 
 	@Value("${spring.application.name}")
 	private String msName;
@@ -132,8 +123,6 @@ public class KafkaSRV extends KafkaAbstractSRV implements IKafkaSRV {
  
 	private IniTraceResponseDTO publishAndReplace(ConsumerRecord<String, String> cr, String destTopic, Date startDateOperation, IndexerValueDTO valueInfo, int delivery) {
 
-		if(accreditamentoSimulationCFG.isEnableCheck()) accreditamentoSRV.runSimulation(valueInfo.getIdDoc());
-		
 		IniTraceResponseDTO response = sendToIniClient(valueInfo);
 
 		if (Boolean.FALSE.equals(response.getEsito())) {

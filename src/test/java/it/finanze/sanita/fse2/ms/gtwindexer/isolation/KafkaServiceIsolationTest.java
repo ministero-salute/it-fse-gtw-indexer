@@ -1,16 +1,30 @@
 package it.finanze.sanita.fse2.ms.gtwindexer.isolation;
 
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.*;
-import static it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.BLOCKING_ERROR_MAX_RETRY;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.NON_BLOCKING_ERROR;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum.SUCCESS;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum.DELETE;
+import static it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum.PUBLISH;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import com.google.gson.Gson;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
@@ -25,14 +39,25 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+
 import it.finanze.sanita.fse2.ms.gtwindexer.client.IIniClient;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.AccreditationSimulationCFG;
-import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.*;
-import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.*;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaConsumerPropertiesCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaProducerPropertiesCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.config.kafka.KafkaTopicCFG;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IndexerValueDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniDeleteRequestDTO;
+import it.finanze.sanita.fse2.ms.gtwindexer.dto.request.IniMetadataUpdateReqDTO;
 import it.finanze.sanita.fse2.ms.gtwindexer.dto.response.IniTraceResponseDTO;
-import it.finanze.sanita.fse2.ms.gtwindexer.enums.*;
-import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.*;
-import it.finanze.sanita.fse2.ms.gtwindexer.service.*;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventStatusEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.EventTypeEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.enums.ProcessorOperationEnum;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BlockingIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.BusinessException;
+import it.finanze.sanita.fse2.ms.gtwindexer.exceptions.TransientTimeoutIniException;
+import it.finanze.sanita.fse2.ms.gtwindexer.service.IConfigSRV;
 import it.finanze.sanita.fse2.ms.gtwindexer.service.impl.KafkaSRV;
 
 @Tag("ISOLATION")
@@ -40,8 +65,6 @@ class KafkaServiceIsolationTest {
     private KafkaSRV service;
     private IIniClient ini;
     private IConfigSRV config;
-    private IAccreditamentoSimulationSRV simulation;
-    private AccreditationSimulationCFG simulationConfig;
     private KafkaConsumerPropertiesCFG consumer;
     private KafkaTemplate<String, String> producer;
 
@@ -51,8 +74,6 @@ class KafkaServiceIsolationTest {
         service = new KafkaSRV();
         ini = mock(IIniClient.class);
         config = mock(IConfigSRV.class);
-        simulation = mock(IAccreditamentoSimulationSRV.class);
-        simulationConfig = mock(AccreditationSimulationCFG.class);
         producer = mock(KafkaTemplate.class);
         consumer = new KafkaConsumerPropertiesCFG();
         consumer.setNRetry(1);
@@ -63,8 +84,6 @@ class KafkaServiceIsolationTest {
         when(topics.getStatusManagerTopic()).thenReturn("status");
         ReflectionTestUtils.setField(service, "iniClient", ini);
         ReflectionTestUtils.setField(service, "configSRV", config);
-        ReflectionTestUtils.setField(service, "accreditamentoSRV", simulation);
-        ReflectionTestUtils.setField(service, "accreditamentoSimulationCFG", simulationConfig);
         ReflectionTestUtils.setField(service, "kafkaConsumerPropCFG", consumer);
         ReflectionTestUtils.setField(service, "topics", topics);
         ReflectionTestUtils.setField(service, "kafkaProducerCFG", mock(KafkaProducerPropertiesCFG.class));
@@ -256,16 +275,6 @@ class KafkaServiceIsolationTest {
         assertThrows(BlockingIniException.class,
                 () -> service.retryDeleteListener(record("{}"), KafkaConsumerCFG.MAX_ATTEMPT + 1));
         verifyNoInteractions(producer);
-    }
-
-    @Test
-    void simulationFailurePreventsIniCall() throws Exception {
-        when(simulationConfig.isEnableCheck()).thenReturn(true);
-        when(simulation.runSimulation("document")).thenThrow(new BlockingIniException("simulation"));
-        assertThrows(BlockingIniException.class,
-                () -> service.publishedDocListener(publication(PUBLISH, true), 1));
-        verifyNoInteractions(ini);
-        assertStatus(messages().getFirst(), "workflow", BLOCKING_ERROR, "SEND_TO_INI");
     }
 
     @Test

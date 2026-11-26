@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
+		<version>3.5.16</version>
 		<relativePath />
 	</parent>
 	
@@ -19,7 +19,7 @@
 		<!-- Application -->
 		<java.version>21</java.version>
 		<test.groups>!ISOLATION</test.groups>
-		<spring-cloud.version>2025.0.0</spring-cloud.version>
+		<spring-cloud.version>2025.0.3</spring-cloud.version>
 		<start-class>it.finanze.sanita.fse2.ms.gtwindexer.GtwIndexerMsApplication</start-class>
 		<!-- Build -->
 		<config.infra>${project.basedir}/infrastructure</config.infra>
@@ -37,12 +37,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.yaml</groupId>
-					<artifactId>snakeyaml</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
 		<dependency>

@@ -31,7 +31,7 @@ The suite tests real configuration services/cache, HTTP clients/routes,
 Kafka processing/retries/status messages, lazy producer/consumer factories,
 security options, topic naming, admin configuration, OAuth token callbacks,
 health reporting, telemetry wiring, response contracts, file utilities,
-accreditation simulation, and the in-memory liveness endpoint.
+and the in-memory liveness endpoint.
 External HTTP, Kafka, DNS, and credential/token dependencies are mocked;
 there is no embedded broker, network access, or application startup.
 The test JVM is limited to 768 MB while preserving the JaCoCo agent.
